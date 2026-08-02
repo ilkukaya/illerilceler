@@ -1,0 +1,220 @@
+---
+import Icon from "@/components/Icon.astro";
+
+const popularQueries = [
+  "47 nerenin plakası?",
+  "312 nerenin kodu?",
+  "İstanbul ilçeleri",
+  "Kadıköy mahalleleri",
+  "34718 posta kodu",
+  "Türkiye'nin en büyük ili",
+];
+---
+
+<div
+  id="global-search"
+  class="fixed inset-0 z-[60] hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Site içi arama"
+>
+  <div
+    id="global-search-backdrop"
+    class="absolute inset-0 bg-[#0B1020]/55 backdrop-blur-[2px]"
+  >
+  </div>
+  <div class="relative mx-auto mt-[8vh] w-[92%] max-w-xl">
+    <div class="card overflow-hidden !rounded-3xl shadow-popover">
+      <div class="flex items-center gap-3 border-b border-border px-4 py-3.5">
+        <Icon name="search" size={19} class="text-text-muted shrink-0" />
+        <input
+          id="global-search-input"
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Şehir, ilçe, plaka, alan kodu veya posta kodu ara..."
+          class="w-full bg-transparent text-[15px] text-text-primary placeholder:text-text-muted outline-none"
+          aria-label="Arama sorgusu"
+        />
+        <kbd
+          class="hidden sm:inline-flex items-center rounded-md border border-border px-1.5 py-0.5 text-[11px] font-semibold text-text-muted"
+          >ESC</kbd
+        >
+      </div>
+
+      <div id="global-search-empty" class="px-4 py-4">
+        <p class="mb-2.5 text-xs font-semibold text-text-muted">
+          Popüler Aramalar
+        </p>
+        <div class="flex flex-wrap gap-2">
+          {
+            popularQueries.map((q) => (
+              <button
+                type="button"
+                class="global-search-suggestion pill !py-1.5"
+                data-query={q}
+              >
+                {q}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div
+        id="global-search-results"
+        class="hidden max-h-[60vh] overflow-y-auto p-2"
+      >
+      </div>
+
+      <div id="global-search-noresults" class="hidden px-4 py-10 text-center">
+        <p class="text-sm font-semibold text-text-primary">Sonuç bulunamadı</p>
+        <p class="mt-1 text-sm text-text-secondary">
+          Farklı bir arama terimi deneyebilir veya tüm sonuçlar sayfasına göz
+          atabilirsiniz.
+        </p>
+      </div>
+
+      <div
+        class="flex items-center justify-between border-t border-border px-4 py-2.5"
+      >
+        <span class="text-xs text-text-muted"
+          >Sonuçları görüntülemek için yazın</span
+        >
+        <a
+          id="global-search-viewall"
+          href="/arama/"
+          class="text-xs font-semibold text-brand-primary hover:text-brand-primary-dark"
+        >
+          Tüm sonuçlar sayfası →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { searchAll } from "@/utils/search";
+  import type { SearchIndexEntry } from "@/types";
+
+  const dialog = document.getElementById("global-search");
+  const backdrop = document.getElementById("global-search-backdrop");
+  const input = document.getElementById(
+    "global-search-input",
+  ) as HTMLInputElement | null;
+  const emptyState = document.getElementById("global-search-empty");
+  const resultsEl = document.getElementById("global-search-results");
+  const noResultsEl = document.getElementById("global-search-noresults");
+  const viewAllLink = document.getElementById(
+    "global-search-viewall",
+  ) as HTMLAnchorElement | null;
+
+  let index: SearchIndexEntry[] | null = null;
+
+  const typeLabels: Record<string, string> = {
+    province: "İl",
+    district: "İlçe",
+    neighborhood: "Mahalle",
+    plate: "Plaka",
+    "area-code": "Alan Kodu",
+    "postal-code": "Posta Kodu",
+    page: "Sayfa",
+  };
+
+  async function ensureIndex() {
+    if (!index) {
+      const mod = await import("@/data/searchIndex");
+      index = mod.searchIndex;
+    }
+    return index;
+  }
+
+  function renderResults(results: SearchIndexEntry[]) {
+    if (!resultsEl) return;
+    resultsEl.innerHTML = results
+      .slice(0, 8)
+      .map(
+        (r) => `
+        <a href="${r.href}" class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-muted">
+          <span class="min-w-0">
+            <span class="block truncate text-sm font-semibold text-text-primary">${r.title}</span>
+            ${r.subtitle ? `<span class="block truncate text-xs text-text-secondary">${r.subtitle}</span>` : ""}
+          </span>
+          <span class="shrink-0 rounded-full bg-surface-muted px-2 py-1 text-[11px] font-semibold text-text-muted">${typeLabels[r.type] ?? ""}</span>
+        </a>`,
+      )
+      .join("");
+  }
+
+  async function runSearch(query: string) {
+    const trimmed = query.trim();
+    if (viewAllLink)
+      viewAllLink.href = trimmed
+        ? `/arama/?q=${encodeURIComponent(trimmed)}`
+        : "/arama/";
+
+    if (!trimmed) {
+      emptyState?.classList.remove("hidden");
+      resultsEl?.classList.add("hidden");
+      noResultsEl?.classList.add("hidden");
+      return;
+    }
+
+    const idx = await ensureIndex();
+    const results = searchAll(trimmed, idx, { limit: 8 });
+
+    emptyState?.classList.add("hidden");
+    if (results.length === 0) {
+      resultsEl?.classList.add("hidden");
+      noResultsEl?.classList.remove("hidden");
+    } else {
+      noResultsEl?.classList.add("hidden");
+      resultsEl?.classList.remove("hidden");
+      renderResults(results);
+    }
+  }
+
+  function openDialog() {
+    dialog?.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+    ensureIndex();
+    window.setTimeout(() => input?.focus(), 30);
+  }
+
+  function closeDialog() {
+    dialog?.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  }
+
+  window.addEventListener("illerilceler:open-search", openDialog);
+  backdrop?.addEventListener("click", closeDialog);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !dialog?.classList.contains("hidden"))
+      closeDialog();
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openDialog();
+    }
+  });
+
+  let debounceTimer: ReturnType<typeof setTimeout>;
+  input?.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => runSearch(input.value), 120);
+  });
+
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && input.value.trim()) {
+      window.location.href = `/arama/?q=${encodeURIComponent(input.value.trim())}`;
+    }
+  });
+
+  document.querySelectorAll(".global-search-suggestion").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const query = btn.getAttribute("data-query") ?? "";
+      if (input) input.value = query;
+      runSearch(query);
+      input?.focus();
+    });
+  });
+</script>

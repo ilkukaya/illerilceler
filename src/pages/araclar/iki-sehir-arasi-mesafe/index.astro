@@ -1,0 +1,357 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+
+const path = "/araclar/iki-sehir-arasi-mesafe/";
+const citiesWithCoords = provinces
+  .filter((p) => p.coordinates)
+  .sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const cityData = citiesWithCoords.map((p) => ({
+  slug: p.slug,
+  name: p.name,
+  plate: p.plateCode,
+  lat: p.coordinates!.lat,
+  lng: p.coordinates!.lng,
+}));
+---
+
+<BaseLayout
+  title="İki Şehir Arası Mesafe Hesaplama"
+  description="İki şehir arasındaki kuş uçuşu ve karayolu mesafesini, tahmini süre ve yakıt maliyetini hesaplayın."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Araçlar", href: "/araclar/" },
+        { label: "İki Şehir Arası Mesafe", href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      İki Şehir Arası Mesafe
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      İki il arasındaki tahmini kuş uçuşu ve karayolu mesafesini, süreyi ve
+      yakıt maliyetini hesaplayın.
+    </p>
+
+    <div class="card mt-6 p-5 sm:p-6">
+      <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
+        <div>
+          <label
+            for="origin-select"
+            class="mb-1.5 block text-xs font-semibold text-text-muted"
+            >Nereden?</label
+          >
+          <select
+            id="origin-select"
+            class="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
+          >
+            {
+              cityData.map((c, i) => (
+                <option value={c.slug} selected={i === 0}>
+                  {c.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <button
+          type="button"
+          id="swap-cities"
+          aria-label="Şehirleri değiştir"
+          class="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-secondary hover:border-brand-primary hover:text-brand-primary sm:mb-0.5"
+        >
+          <Icon name="arrow-left-right" size={18} />
+        </button>
+        <div>
+          <label
+            for="destination-select"
+            class="mb-1.5 block text-xs font-semibold text-text-muted"
+            >Nereye?</label
+          >
+          <select
+            id="destination-select"
+            class="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
+          >
+            {
+              cityData.map((c, i) => (
+                <option value={c.slug} selected={i === 1}>
+                  {c.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+        <div
+          class="flex items-center rounded-xl border border-border p-1"
+          role="group"
+          aria-label="Güzergah tipi"
+        >
+          <button
+            type="button"
+            id="mode-road"
+            class="route-mode-btn rounded-lg px-4 py-2 text-sm font-semibold"
+            aria-pressed="true"
+          >
+            <Icon name="car" size={14} class="mr-1.5 inline" />
+            Karayolu
+          </button>
+          <button
+            type="button"
+            id="mode-air"
+            class="route-mode-btn rounded-lg px-4 py-2 text-sm font-semibold"
+            aria-pressed="false"
+          >
+            <Icon name="plane" size={14} class="mr-1.5 inline" />
+            Kuş Uçuşu
+          </button>
+        </div>
+        <button type="button" id="calculate-btn" class="btn btn-primary">
+          Hesapla
+          <Icon name="arrow-right" size={16} />
+        </button>
+      </div>
+    </div>
+
+    <div id="result-card" class="mt-6 hidden">
+      <div class="card overflow-hidden">
+        <div
+          class="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <span class="flex flex-col items-center">
+              <Icon name="map-pin" size={20} class="text-brand-primary" />
+              <span
+                id="result-origin"
+                class="mt-1 text-sm font-bold text-text-primary"></span>
+            </span>
+            <svg
+              width="60"
+              height="16"
+              viewBox="0 0 60 16"
+              class="text-border-strong"
+            >
+              <line
+                x1="0"
+                y1="8"
+                x2="52"
+                y2="8"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-dasharray="4 4"></line>
+              <path
+                d="M52 2 L58 8 L52 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+            <span class="flex flex-col items-center">
+              <Icon name="flag" size={20} class="text-brand-primary" />
+              <span
+                id="result-destination"
+                class="mt-1 text-sm font-bold text-text-primary"></span>
+            </span>
+          </div>
+          <div class="text-center sm:text-right">
+            <p
+              id="result-distance"
+              class="text-4xl font-extrabold text-brand-primary"
+            >
+            </p>
+            <p
+              id="result-distance-label"
+              class="text-xs font-semibold text-text-muted"
+            >
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="grid grid-cols-2 gap-3 border-t border-border p-5 sm:grid-cols-4"
+        >
+          <div class="text-center">
+            <p class="text-xs text-text-muted">Yaklaşık Süre</p>
+            <p
+              id="result-duration"
+              class="mt-1 text-sm font-bold text-text-primary"
+            >
+              —
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-text-muted">Yakıt Tüketimi</p>
+            <p
+              id="result-fuel"
+              class="mt-1 text-sm font-bold text-text-primary"
+            >
+              —
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-text-muted">Yaklaşık Maliyet</p>
+            <p
+              id="result-cost"
+              class="mt-1 text-sm font-bold text-text-primary"
+            >
+              —
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-text-muted">Kuş Uçuşu</p>
+            <p
+              id="result-straight"
+              class="mt-1 text-sm font-bold text-text-primary"
+            >
+              —
+            </p>
+          </div>
+        </div>
+
+        <p
+          class="border-t border-border bg-surface-muted px-5 py-3 text-xs text-text-muted"
+        >
+          <Icon name="info" size={13} class="mr-1 inline" />
+          Bu hesaplama, koordinatlar arası tahmini bir yaklaşımdır (demo veri); gerçek
+          güzergah, trafik ve yol koşullarına göre değişebilir. Kesin bilgi için harita/navigasyon
+          uygulamalarını kullanınız.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script define:vars={{ cityData }} is:inline>
+  window.__cityData = cityData;
+</script>
+
+<script>
+  import {
+    haversineDistanceKm,
+    estimateRoadDistanceKm,
+    estimateDurationHours,
+    formatDuration,
+    estimateFuelLiters,
+    estimateFuelCostTRY,
+  } from "@/utils/distance";
+
+  interface CityDatum {
+    slug: string;
+    name: string;
+    plate: string;
+    lat: number;
+    lng: number;
+  }
+
+  const cityData = (window as unknown as { __cityData: CityDatum[] })
+    .__cityData;
+  const originSelect = document.getElementById(
+    "origin-select",
+  ) as HTMLSelectElement | null;
+  const destinationSelect = document.getElementById(
+    "destination-select",
+  ) as HTMLSelectElement | null;
+  const swapBtn = document.getElementById("swap-cities");
+  const calculateBtn = document.getElementById("calculate-btn");
+  const modeRoadBtn = document.getElementById("mode-road");
+  const modeAirBtn = document.getElementById("mode-air");
+  const resultCard = document.getElementById("result-card");
+
+  let mode: "road" | "air" = "road";
+
+  function findCity(slug: string): CityDatum | undefined {
+    return cityData.find((c) => c.slug === slug);
+  }
+
+  function calculate() {
+    const origin = findCity(originSelect?.value ?? "");
+    const destination = findCity(destinationSelect?.value ?? "");
+    if (!origin || !destination) return;
+
+    const straightKm = haversineDistanceKm(origin, destination);
+    const roadKm = estimateRoadDistanceKm(straightKm);
+
+    document.getElementById("result-origin")!.textContent = origin.name;
+    document.getElementById("result-destination")!.textContent =
+      destination.name;
+    document.getElementById("result-straight")!.textContent =
+      `${Math.round(straightKm)} km`;
+
+    if (origin.slug === destination.slug) {
+      document.getElementById("result-distance")!.textContent = "0 km";
+      document.getElementById("result-distance-label")!.textContent =
+        "Aynı şehir";
+      document.getElementById("result-duration")!.textContent = "—";
+      document.getElementById("result-fuel")!.textContent = "—";
+      document.getElementById("result-cost")!.textContent = "—";
+    } else if (mode === "road") {
+      const hours = estimateDurationHours(roadKm);
+      const liters = estimateFuelLiters(roadKm);
+      const cost = estimateFuelCostTRY(liters);
+      document.getElementById("result-distance")!.textContent =
+        `${Math.round(roadKm)} km`;
+      document.getElementById("result-distance-label")!.textContent =
+        "Karayolu Mesafesi (tahmini)";
+      document.getElementById("result-duration")!.textContent =
+        formatDuration(hours);
+      document.getElementById("result-fuel")!.textContent =
+        `~${liters.toFixed(1)} L`;
+      document.getElementById("result-cost")!.textContent =
+        `~${Math.round(cost).toLocaleString("tr-TR")} TL`;
+    } else {
+      document.getElementById("result-distance")!.textContent =
+        `${Math.round(straightKm)} km`;
+      document.getElementById("result-distance-label")!.textContent =
+        "Kuş Uçuşu Mesafe";
+      document.getElementById("result-duration")!.textContent = "—";
+      document.getElementById("result-fuel")!.textContent = "—";
+      document.getElementById("result-cost")!.textContent = "—";
+    }
+
+    resultCard?.classList.remove("hidden");
+  }
+
+  swapBtn?.addEventListener("click", () => {
+    if (!originSelect || !destinationSelect) return;
+    const tmp = originSelect.value;
+    originSelect.value = destinationSelect.value;
+    destinationSelect.value = tmp;
+    if (!resultCard?.classList.contains("hidden")) calculate();
+  });
+
+  modeRoadBtn?.addEventListener("click", () => {
+    mode = "road";
+    modeRoadBtn.setAttribute("aria-pressed", "true");
+    modeAirBtn?.setAttribute("aria-pressed", "false");
+    if (!resultCard?.classList.contains("hidden")) calculate();
+  });
+  modeAirBtn?.addEventListener("click", () => {
+    mode = "air";
+    modeAirBtn.setAttribute("aria-pressed", "true");
+    modeRoadBtn?.setAttribute("aria-pressed", "false");
+    if (!resultCard?.classList.contains("hidden")) calculate();
+  });
+
+  calculateBtn?.addEventListener("click", calculate);
+</script>
+
+<style>
+  .route-mode-btn[aria-pressed="true"] {
+    background-color: var(--brand-primary);
+    color: white;
+  }
+  .route-mode-btn[aria-pressed="false"] {
+    color: var(--color-text-secondary);
+  }
+</style>

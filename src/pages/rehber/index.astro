@@ -1,0 +1,185 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import Icon from "@/components/Icon.astro";
+import { neighboringCountries } from "@/data/geography";
+import { institutionalSources } from "@/data/sources";
+
+const path = "/rehber/";
+
+const climateTypes = [
+  {
+    name: "Karadeniz İklimi",
+    description:
+      "Her mevsim yağışlı, yazları serin, kışları ılıman geçen nemli bir iklim tipidir.",
+  },
+  {
+    name: "Akdeniz İklimi",
+    description:
+      "Yazları sıcak ve kurak, kışları ılıman ve yağışlı geçen bir iklim tipidir.",
+  },
+  {
+    name: "Karasal İklim",
+    description:
+      "Yazları sıcak ve kurak, kışları soğuk ve karlı geçen, günlük/yıllık sıcaklık farkı yüksek bir iklim tipidir.",
+  },
+  {
+    name: "Marmara (Geçiş) İklimi",
+    description:
+      "Karadeniz ve Akdeniz iklimleri arasında geçiş özelliği gösteren ılıman bir iklim tipidir.",
+  },
+];
+
+const airports = [
+  { name: "İstanbul Havalimanı", city: "İstanbul" },
+  { name: "Sabiha Gökçen Havalimanı", city: "İstanbul" },
+  { name: "Esenboğa Havalimanı", city: "Ankara" },
+  { name: "Adnan Menderes Havalimanı", city: "İzmir" },
+  { name: "Antalya Havalimanı", city: "Antalya" },
+  { name: "Milas-Bodrum Havalimanı", city: "Muğla" },
+];
+---
+
+<BaseLayout
+  title="Rehber — Türkiye Coğrafyası Hakkında Faydalı Bilgiler"
+  description="İklim tipleri, komşu ülkeler, havalimanları, üniversiteler ve kaynaklar hakkında rehber içerikler."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Rehber", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Rehber
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye coğrafyası hakkında faydalı, güvenilir referans bilgiler.
+    </p>
+
+    <section
+      id="iklim-tipleri"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="iklim-heading"
+    >
+      <SectionHeader
+        as="h2"
+        id="iklim-heading"
+        eyebrow="Coğrafya"
+        title="Türkiye'de İklim Tipleri"
+      />
+      <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {
+          climateTypes.map((c) => (
+            <div class="card p-4">
+              <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
+                <Icon name="cloud-sun" size={16} class="text-brand-primary" />
+                {c.name}
+              </h3>
+              <p class="prose-content mt-2 text-sm">{c.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      id="komsu-ulkeler"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="komsu-ulkeler-heading"
+    >
+      <SectionHeader
+        as="h2"
+        id="komsu-ulkeler-heading"
+        title="Türkiye'nin Komşu Ülkeleri"
+        description="Türkiye, Avrupa ve Asya'da toplam 8 ülkeyle sınır komşusudur."
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          neighboringCountries.map((c) => (
+            <span class="chip">
+              <Icon name="flag" size={13} class="mr-1.5 text-brand-primary" />
+              {c}
+            </span>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      id="ulasim"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="ulasim-heading"
+    >
+      <SectionHeader as="h2" id="ulasim-heading" title="Büyük Havalimanları" />
+      <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          airports.map((a) => (
+            <div class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+              <Icon
+                name="plane"
+                size={16}
+                class="shrink-0 text-brand-primary"
+              />
+              <span>
+                <span class="block text-sm font-semibold text-text-primary">
+                  {a.name}
+                </span>
+                <span class="block text-xs text-text-muted">{a.city}</span>
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      id="universiteler"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="universiteler-heading"
+    >
+      <SectionHeader as="h2" id="universiteler-heading" title="Üniversiteler" />
+      <p class="prose-content mt-3">
+        Türkiye'nin dört bir yanında köklü devlet ve vakıf üniversiteleri
+        bulunmaktadır. Bazı illerin üniversite bilgilerine il sayfalarından
+        ulaşabilirsiniz:
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="/iller/istanbul/#egitim" class="pill"
+          >İstanbul Üniversiteleri</a
+        >
+        <a href="/iller/ankara/#egitim" class="pill">Ankara Üniversiteleri</a>
+      </div>
+    </section>
+
+    <section
+      id="kaynaklar"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="kaynaklar-heading"
+    >
+      <SectionHeader
+        as="h2"
+        id="kaynaklar-heading"
+        title="Kaynaklar"
+        description="Bu platformdaki bilgiler aşağıdaki kurumların açık verilerinden ve genel referans kaynaklarından derlenmiştir."
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          institutionalSources.map((s) => (
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="chip hover:border-brand-primary hover:text-brand-primary"
+            >
+              <Icon name="external-link" size={12} class="mr-1.5" />
+              {s.name}
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </PageContainer>
+</BaseLayout>

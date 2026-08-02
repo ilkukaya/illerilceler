@@ -1,0 +1,47 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import QuizRunner from "@/components/education/QuizRunner.astro";
+import { quizzes } from "@/data/education";
+import { quizSchema } from "@/utils/seo";
+
+const path = "/egitim/quiz/";
+const quiz = quizzes[0];
+---
+
+<BaseLayout
+  title={`${quiz.title} — Eğitim Köşesi`}
+  description={quiz.description}
+  path={path}
+  schema={quizSchema({
+    name: quiz.title,
+    description: quiz.description,
+    path,
+    numberOfQuestions: quiz.questions.length,
+  })}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Eğitim", href: "/egitim/" },
+        { label: "Quiz", href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1
+      class="text-center text-3xl font-extrabold text-text-primary sm:text-4xl"
+    >
+      Türkiye Coğrafyası Quiz
+    </h1>
+    <p class="prose-content mx-auto mt-3 max-w-xl text-center">
+      İller, plaka kodları, bölgeler ve coğrafya hakkındaki bilgini test et!
+    </p>
+
+    <div class="mt-10">
+      <QuizRunner quiz={quiz} />
+    </div>
+  </PageContainer>
+</BaseLayout>

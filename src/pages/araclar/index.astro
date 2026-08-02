@@ -1,0 +1,63 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import QuickToolCard from "@/components/cards/QuickToolCard.astro";
+
+const path = "/araclar/";
+const tools = [
+  {
+    icon: "route",
+    label: "İki Şehir Arası Mesafe",
+    href: "/araclar/iki-sehir-arasi-mesafe/",
+    color: "blue" as const,
+  },
+  {
+    icon: "car",
+    label: "Plaka Sorgulama",
+    href: "/plaka-kodlari/",
+    color: "orange" as const,
+  },
+  {
+    icon: "phone",
+    label: "Alan Kodu Sorgulama",
+    href: "/alan-kodlari/",
+    color: "pink" as const,
+  },
+  {
+    icon: "mail",
+    label: "Posta Kodu Sorgulama",
+    href: "/posta-kodlari/",
+    color: "cyan" as const,
+  },
+  {
+    icon: "sunrise",
+    label: "Güneş Doğuşu ve Batışı",
+    href: "/araclar/gunes-dogusu-batisi/",
+    color: "purple" as const,
+  },
+];
+---
+
+<BaseLayout
+  title="Araçlar — Pratik Hesaplama ve Sorgulama Araçları"
+  description="Şehirler arası mesafe, plaka, alan kodu ve posta kodu sorgulama araçları."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Araçlar", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Araçlar
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Günlük hayatta işinize yarayacak pratik hesaplama ve sorgulama araçları.
+    </p>
+
+    <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      {tools.map((t) => <QuickToolCard {...t} />)}
+    </div>
+  </PageContainer>
+</BaseLayout>

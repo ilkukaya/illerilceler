@@ -1,0 +1,87 @@
+---
+export interface TocItem {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  items: TocItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div
+  class="sticky top-16 z-30 -mx-4 border-b border-border bg-surface/95 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:border"
+>
+  <nav
+    aria-label="Sayfa içi bölümler"
+    class="scrollbar-none overflow-x-auto px-4 sm:px-2"
+  >
+    <ul class="flex min-w-max items-center gap-1 py-2">
+      {
+        items.map((item, index) => (
+          <li>
+            <a
+              href={`#${item.id}`}
+              data-toc-link
+              data-target={item.id}
+              class:list={[
+                "toc-link inline-flex items-center rounded-lg px-3 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors",
+                index === 0
+                  ? "text-brand-primary bg-brand-purple-soft"
+                  : "text-text-secondary hover:bg-surface-muted hover:text-text-primary",
+              ]}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</div>
+
+<script>
+  function initToc(root: Document | HTMLElement) {
+    const links = Array.from(
+      root.querySelectorAll<HTMLAnchorElement>("[data-toc-link]"),
+    );
+    if (links.length === 0) return;
+
+    const sections = links
+      .map((link) => document.getElementById(link.dataset.target ?? ""))
+      .filter((el): el is HTMLElement => Boolean(el));
+
+    if (sections.length === 0) return;
+
+    const setActive = (id: string) => {
+      links.forEach((link) => {
+        const active = link.dataset.target === id;
+        link.classList.toggle("text-brand-primary", active);
+        link.classList.toggle("bg-brand-purple-soft", active);
+        link.classList.toggle("text-text-secondary", !active);
+        if (active)
+          link.scrollIntoView({
+            block: "nearest",
+            inline: "center",
+            behavior: "smooth",
+          });
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-140px 0px -60% 0px", threshold: 0 },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  initToc(document);
+</script>

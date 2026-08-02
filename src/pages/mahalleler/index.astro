@@ -1,0 +1,121 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+import { neighborhoods } from "@/data/neighborhoods";
+import { siteConfig } from "@/config/site";
+
+const path = "/mahalleler/";
+const sorted = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+
+const faqs = [
+  {
+    question: "Türkiye'de kaç mahalle vardır?",
+    answer: `Türkiye genelinde ${siteConfig.stats.neighborhoods} mahalle ve semt bulunmaktadır.`,
+  },
+  {
+    question: "Mahalle ile semt arasındaki fark nedir?",
+    answer:
+      "Mahalle idari bir birimken, semt günlük dilde kullanılan gayriresmî bir yerleşim adıdır. Bir semt birden fazla mahalleyi kapsayabilir.",
+  },
+  {
+    question: "Bir mahallenin posta kodunu nasıl öğrenebilirim?",
+    answer:
+      "Posta Kodları sayfasından mahalle veya posta kodu adını arayarak öğrenebilirsiniz.",
+  },
+];
+---
+
+<BaseLayout
+  title="Türkiye'nin Mahalleleri — Mahalle ve Semt Rehberi"
+  description={`Türkiye genelinde ${siteConfig.stats.neighborhoods} mahalle ve semt hakkında bilgi edinin. İlçelere göre mahalle listelerine ulaşın.`}
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Mahalleler", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Türkiye'nin Mahalleleri
+    </h1>
+    <div
+      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
+    >
+      <p class="text-base font-semibold text-text-primary">
+        <strong
+          >Türkiye genelinde {siteConfig.stats.neighborhoods} mahalle ve semt bulunur.</strong
+        > Mahalle bilgilerine ilçe sayfalarından ulaşabilirsiniz.
+      </p>
+    </div>
+
+    <section class="mt-10" aria-labelledby="ornek-heading">
+      <SectionHeader
+        as="h2"
+        id="ornek-heading"
+        eyebrow="Örnek"
+        title="Kadıköy Mahalleleri"
+        description="Detaylı mahalle verisi bulunan örnek ilçe."
+        href="/iller/istanbul/kadikoy/"
+        linkLabel="Tüm Mahalleleri Gör"
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          neighborhoods.map((n) => (
+            <a href={`/posta-kodlari/${n.postalCode}/`} class="pill">
+              {n.name}
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="mt-10" aria-labelledby="illere-gore-heading">
+      <SectionHeader
+        as="h2"
+        id="illere-gore-heading"
+        title="İllere Göre Gözat"
+        description="Bir ile ait mahalle bilgilerine ulaşmak için ili seçin."
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          sorted.map((p) => (
+            <a href={`/iller/${p.slug}/`} class="pill">
+              {p.name}{" "}
+              <span class="ml-1 text-text-muted">
+                ({p.neighborhoodCount ? p.neighborhoodCount : "—"})
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      class="mt-10 rounded-2xl border border-border bg-surface-muted p-5"
+      aria-labelledby="genisletme-heading"
+    >
+      <h2
+        id="genisletme-heading"
+        class="flex items-center gap-2 text-sm font-bold text-text-primary"
+      >
+        <Icon name="info" size={16} class="text-brand-primary" />
+        Veri Kapsamı Hakkında
+      </h2>
+      <p class="prose-content mt-2 text-sm">
+        Şu anda ayrıntılı mahalle verisi Kadıköy örneği ile sunulmaktadır. Diğer
+        ilçeler için mahalle listeleri kademeli olarak eklenmektedir.
+      </p>
+    </section>
+
+    <div class="mt-12">
+      <FAQAccordion faqs={faqs} />
+    </div>
+  </PageContainer>
+</BaseLayout>

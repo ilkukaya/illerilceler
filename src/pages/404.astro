@@ -1,0 +1,52 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import SearchBox from "@/components/search/SearchBox.astro";
+import Icon from "@/components/Icon.astro";
+
+const popularLinks = [
+  { label: "İstanbul İli", href: "/iller/istanbul/" },
+  { label: "47 Nerenin Plakası?", href: "/plaka-kodlari/47/" },
+  { label: "312 Nerenin Alan Kodu?", href: "/alan-kodlari/312/" },
+  { label: "Türkiye Haritası", href: "/haritalar/turkiye-haritasi/" },
+  { label: "Eğitim Köşesi", href: "/egitim/" },
+  { label: "Tüm İller", href: "/iller/" },
+];
+---
+
+<BaseLayout
+  title="Sayfa Bulunamadı"
+  description="Aradığınız sayfa bulunamadı."
+  path="/404/"
+  noindex
+>
+  <PageContainer class="flex flex-col items-center py-20 text-center sm:py-28">
+    <span class="text-7xl font-extrabold text-brand-primary/25 sm:text-8xl"
+      >404</span
+    >
+    <h1 class="mt-2 text-2xl font-extrabold text-text-primary sm:text-3xl">
+      Aradığınız sayfa bulunamadı
+    </h1>
+    <p class="prose-content mt-3 max-w-md">
+      Bu sayfa kaldırılmış, taşınmış ya da hiç var olmamış olabilir. Aşağıdan
+      arama yapabilir veya popüler sayfalara göz atabilirsiniz.
+    </p>
+
+    <SearchBox size="md" class="mt-8 max-w-lg" />
+
+    <div class="mt-8 flex flex-wrap justify-center gap-2">
+      {
+        popularLinks.map((link) => (
+          <a href={link.href} class="pill">
+            {link.label}
+          </a>
+        ))
+      }
+    </div>
+
+    <a href="/" class="btn btn-primary mt-10">
+      <Icon name="home" size={16} />
+      Ana Sayfaya Dön
+    </a>
+  </PageContainer>
+</BaseLayout>

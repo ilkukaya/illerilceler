@@ -1,0 +1,56 @@
+---
+import Icon from "@/components/Icon.astro";
+
+interface Props {
+  size?: "lg" | "md";
+  placeholder?: string;
+  class?: string;
+  autofocus?: boolean;
+}
+
+const {
+  size = "lg",
+  placeholder = "Aramak istediğiniz şehir, ilçe, mahalle, plaka, alan kodu veya posta kodu...",
+  class: className = "",
+  autofocus = false,
+} = Astro.props;
+---
+
+<form
+  action="/arama/"
+  method="get"
+  role="search"
+  class:list={["group relative flex w-full items-center", className]}
+>
+  <Icon
+    name="search"
+    size={size === "lg" ? 22 : 18}
+    class="pointer-events-none absolute left-4 sm:left-5 text-text-muted"
+  />
+  <label for="site-search-input" class="sr-only">Site içi arama</label>
+  <input
+    id="site-search-input"
+    type="search"
+    name="q"
+    autocomplete="off"
+    spellcheck="false"
+    autofocus={autofocus}
+    placeholder={placeholder}
+    class:list={[
+      "w-full rounded-2xl border border-border bg-surface text-text-primary placeholder:text-text-muted shadow-card outline-none transition-shadow focus:shadow-popover focus:border-brand-primary",
+      size === "lg"
+        ? "h-14 sm:h-16 pl-12 sm:pl-14 pr-28 sm:pr-32 text-[15px] sm:text-base"
+        : "h-12 pl-11 pr-24 text-sm",
+    ]}
+  />
+  <button
+    type="submit"
+    class:list={[
+      "btn btn-primary absolute right-2 !rounded-xl",
+      size === "lg" ? "h-10 sm:h-12 px-4 sm:px-6" : "h-9 px-3.5 text-sm",
+    ]}
+  >
+    <Icon name="search" size={16} class="sm:hidden" />
+    <span class="hidden sm:inline">Ara</span>
+  </button>
+</form>

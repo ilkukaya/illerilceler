@@ -1,0 +1,122 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { areaCodes } from "@/data/areaCodes";
+import { getProvinceBySlug } from "@/data/provinces";
+import { getRegion } from "@/data/regions";
+
+const sorted = [...areaCodes].sort((a, b) => a.code.localeCompare(b.code));
+const path = "/alan-kodlari/";
+---
+
+<BaseLayout
+  title="Alan Kodları — Türkiye İl Telefon Alan Kodları Listesi"
+  description="Türkiye'deki illerin sabit telefon alan kodlarını görüntüleyin. Alan kodu girerek hangi ile ait olduğunu hemen öğrenin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Alan Kodları", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Alan Kodları
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye'de sabit hatlar il bazında 3 haneli alan kodları kullanır.
+      Aşağıdan bir kod girerek veya listeden seçerek ilgili ile ulaşabilirsiniz.
+    </p>
+
+    <form id="area-lookup-form" class="mt-6 flex max-w-md items-center gap-2">
+      <label for="area-lookup-input" class="sr-only">Alan kodu ara</label>
+      <div class="relative flex-1">
+        <Icon
+          name="phone"
+          size={18}
+          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+        />
+        <input
+          id="area-lookup-input"
+          type="text"
+          inputmode="numeric"
+          maxlength="3"
+          placeholder="Örn: 312"
+          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary h-12">Sorgula</button>
+    </form>
+    <p
+      id="area-lookup-error"
+      class="mt-2 hidden text-sm font-medium text-brand-red"
+    >
+      Geçerli bir alan kodu girin.
+    </p>
+
+    <div
+      class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+      id="area-grid"
+    >
+      {
+        sorted.map((ac) => {
+          const province = getProvinceBySlug(ac.provinceSlug);
+          const region = province ? getRegion(province.region) : undefined;
+          return (
+            <a
+              href={`/alan-kodlari/${ac.code}/`}
+              class="area-grid-item card card-hover flex flex-col items-center gap-1.5 p-4 text-center"
+              data-text={`${ac.code} ${province?.name}`}
+            >
+              <span class="text-2xl font-extrabold text-brand-primary">
+                {ac.code}
+              </span>
+              <span class="text-sm font-semibold text-text-primary">
+                {province?.name}
+              </span>
+              <span class="text-xs text-text-muted">
+                {region?.name.replace(" Bölgesi", "")}
+              </span>
+            </a>
+          );
+        })
+      }
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  import { attachListFilter } from "@/utils/listFilter";
+
+  const form = document.getElementById(
+    "area-lookup-form",
+  ) as HTMLFormElement | null;
+  const input = document.getElementById(
+    "area-lookup-input",
+  ) as HTMLInputElement | null;
+  const errorEl = document.getElementById("area-lookup-error");
+  const items = Array.from(
+    document.querySelectorAll<HTMLElement>(".area-grid-item"),
+  );
+  const validCodes = new Set(
+    items
+      .map(
+        (el) => el.getAttribute("href")?.match(/\/alan-kodlari\/(\d+)\//)?.[1],
+      )
+      .filter(Boolean),
+  );
+
+  attachListFilter(input, items, (el) => el.dataset.text ?? "");
+
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const raw = (input?.value ?? "").trim().replace(/^0+/, "");
+    if (validCodes.has(raw)) {
+      errorEl?.classList.add("hidden");
+      window.location.href = `/alan-kodlari/${raw}/`;
+    } else {
+      errorEl?.classList.remove("hidden");
+    }
+  });
+</script>

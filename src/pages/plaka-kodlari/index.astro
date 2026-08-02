@@ -1,0 +1,123 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+import { getRegion } from "@/data/regions";
+
+const sorted = [...provinces].sort((a, b) =>
+  a.plateCode.localeCompare(b.plateCode),
+);
+const path = "/plaka-kodlari/";
+---
+
+<BaseLayout
+  title="Plaka Kodları — Türkiye'nin 81 İlinin Plaka Kodu Listesi"
+  description="Türkiye'deki 81 ilin plaka kodlarını görüntüleyin. Plaka kodu girerek hangi ile ait olduğunu hemen öğrenin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Plaka Kodları", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Plaka Kodları
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye'de her il, araç plakalarında kullanılan iki haneli bir plaka
+      koduna sahiptir. Aşağıdan bir kod girerek veya listeden seçerek ilgili ile
+      ulaşabilirsiniz.
+    </p>
+
+    <form id="plate-lookup-form" class="mt-6 flex max-w-md items-center gap-2">
+      <label for="plate-lookup-input" class="sr-only">Plaka kodu ara</label>
+      <div class="relative flex-1">
+        <Icon
+          name="car"
+          size={18}
+          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+        />
+        <input
+          id="plate-lookup-input"
+          type="text"
+          inputmode="numeric"
+          maxlength="2"
+          placeholder="Örn: 47"
+          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary h-12">Sorgula</button>
+    </form>
+    <p
+      id="plate-lookup-error"
+      class="mt-2 hidden text-sm font-medium text-brand-red"
+    >
+      Geçerli bir plaka kodu girin (01-81).
+    </p>
+
+    <div
+      class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+      id="plate-grid"
+    >
+      {
+        sorted.map((p) => {
+          const region = getRegion(p.region);
+          return (
+            <a
+              href={`/plaka-kodlari/${p.plateCode}/`}
+              class="plate-grid-item card card-hover flex flex-col items-center gap-1.5 p-4 text-center"
+              data-text={`${p.plateCode} ${p.name}`}
+            >
+              <span class="text-2xl font-extrabold text-brand-primary">
+                {p.plateCode}
+              </span>
+              <span class="text-sm font-semibold text-text-primary">
+                {p.name}
+              </span>
+              <span class="text-xs text-text-muted">
+                {region?.name.replace(" Bölgesi", "")}
+              </span>
+            </a>
+          );
+        })
+      }
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  import { attachListFilter } from "@/utils/listFilter";
+
+  const form = document.getElementById(
+    "plate-lookup-form",
+  ) as HTMLFormElement | null;
+  const input = document.getElementById(
+    "plate-lookup-input",
+  ) as HTMLInputElement | null;
+  const errorEl = document.getElementById("plate-lookup-error");
+  const items = Array.from(
+    document.querySelectorAll<HTMLElement>(".plate-grid-item"),
+  );
+  const validCodes = new Set(
+    items
+      .map(
+        (el) => el.getAttribute("href")?.match(/\/plaka-kodlari\/(\d+)\//)?.[1],
+      )
+      .filter(Boolean),
+  );
+
+  attachListFilter(input, items, (el) => el.dataset.text ?? "");
+
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const raw = (input?.value ?? "").trim().replace(/^0+/, "").padStart(2, "0");
+    if (validCodes.has(raw)) {
+      errorEl?.classList.add("hidden");
+      window.location.href = `/plaka-kodlari/${raw}/`;
+    } else {
+      errorEl?.classList.remove("hidden");
+    }
+  });
+</script>

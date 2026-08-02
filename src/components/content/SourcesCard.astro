@@ -1,0 +1,57 @@
+---
+import Icon from "@/components/Icon.astro";
+import type { SourceRef } from "@/types";
+import { dataDisclaimer } from "@/data/sources";
+
+interface Props {
+  sources?: SourceRef[];
+  lastReviewed?: string;
+  id?: string;
+}
+
+const { sources = [], lastReviewed, id = "kaynaklar" } = Astro.props;
+---
+
+<section
+  aria-labelledby={`${id}-heading`}
+  id={id}
+  class="rounded-2xl border border-border bg-surface-muted p-4 sm:p-5"
+>
+  <h2
+    id={`${id}-heading`}
+    class="flex items-center gap-2 text-sm font-bold text-text-primary"
+  >
+    <Icon name="shield-check" size={16} class="text-brand-primary" />
+    Kaynaklar
+  </h2>
+  {
+    sources.length > 0 && (
+      <ul class="mt-3 flex flex-wrap gap-2">
+        {sources.map((s) =>
+          s.url ? (
+            <li>
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="chip hover:border-brand-primary hover:text-brand-primary"
+              >
+                {s.name}
+              </a>
+            </li>
+          ) : (
+            <li class="chip">{s.name}</li>
+          ),
+        )}
+      </ul>
+    )
+  }
+  <p class="mt-3 text-xs leading-relaxed text-text-muted">{dataDisclaimer}</p>
+  {
+    lastReviewed && (
+      <p class="mt-1.5 text-xs text-text-muted">
+        Son güncelleme: {lastReviewed}
+      </p>
+    )
+  }
+</section>

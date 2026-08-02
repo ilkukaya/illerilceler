@@ -1,0 +1,136 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { postalCodes } from "@/data/postalCodes";
+import { getProvinceBySlug } from "@/data/provinces";
+import { getDistrictBySlug } from "@/data/districts";
+
+const sorted = [...postalCodes].sort((a, b) => a.code.localeCompare(b.code));
+const path = "/posta-kodlari/";
+---
+
+<BaseLayout
+  title="Posta Kodları — İl ve İlçelere Göre Posta Kodu Sorgulama"
+  description="Türkiye'deki posta kodlarını sorgulayın. Posta kodu girerek hangi il, ilçe ve mahalleye ait olduğunu öğrenin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Posta Kodları", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Posta Kodları
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye'de posta kodları 5 haneli olup ilk iki hane ili belirtir. Aşağıdan
+      5 haneli bir posta kodu girerek sorgulama yapabilirsiniz.
+    </p>
+
+    <form id="postal-lookup-form" class="mt-6 flex max-w-md items-center gap-2">
+      <label for="postal-lookup-input" class="sr-only">Posta kodu ara</label>
+      <div class="relative flex-1">
+        <Icon
+          name="mail"
+          size={18}
+          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+        />
+        <input
+          id="postal-lookup-input"
+          type="text"
+          inputmode="numeric"
+          maxlength="5"
+          placeholder="Örn: 34718"
+          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary h-12">Sorgula</button>
+    </form>
+    <p
+      id="postal-lookup-error"
+      class="mt-2 hidden text-sm font-medium text-brand-red"
+    >
+      Bu kod demo veri setinde bulunamadı. İlinizin sayfasından ilçe posta
+      kodlarına göz atabilirsiniz.
+    </p>
+
+    <div
+      class="mt-6 rounded-2xl border border-border bg-surface-muted p-4 text-sm text-text-secondary"
+    >
+      <Icon name="info" size={15} class="mr-1.5 inline text-text-muted" />
+      Bu sayfada örnek amaçlı sınırlı sayıda posta kodu listelenmektedir. Tam liste
+      için
+      <a
+        href="/rehber/"
+        class="font-semibold text-brand-primary hover:underline"
+        >PTT kaynaklarını</a
+      > inceleyebilirsiniz.
+    </div>
+
+    <div
+      class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+      id="postal-grid"
+    >
+      {
+        sorted.map((pc) => {
+          const province = getProvinceBySlug(pc.provinceSlug);
+          const district = pc.districtSlug
+            ? getDistrictBySlug(pc.provinceSlug, pc.districtSlug)
+            : undefined;
+          return (
+            <a
+              href={`/posta-kodlari/${pc.code}/`}
+              class="postal-grid-item card card-hover flex flex-col items-center gap-1.5 p-4 text-center"
+              data-text={`${pc.code} ${province?.name} ${district?.name ?? ""}`}
+            >
+              <span class="font-mono text-xl font-extrabold text-brand-primary">
+                {pc.code}
+              </span>
+              <span class="text-sm font-semibold text-text-primary">
+                {district?.name ?? province?.name}
+              </span>
+              <span class="text-xs text-text-muted">{province?.name}</span>
+            </a>
+          );
+        })
+      }
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  import { attachListFilter } from "@/utils/listFilter";
+
+  const form = document.getElementById(
+    "postal-lookup-form",
+  ) as HTMLFormElement | null;
+  const input = document.getElementById(
+    "postal-lookup-input",
+  ) as HTMLInputElement | null;
+  const errorEl = document.getElementById("postal-lookup-error");
+  const items = Array.from(
+    document.querySelectorAll<HTMLElement>(".postal-grid-item"),
+  );
+  const validCodes = new Set(
+    items
+      .map(
+        (el) => el.getAttribute("href")?.match(/\/posta-kodlari\/(\d+)\//)?.[1],
+      )
+      .filter(Boolean),
+  );
+
+  attachListFilter(input, items, (el) => el.dataset.text ?? "");
+
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const raw = (input?.value ?? "").trim();
+    if (validCodes.has(raw)) {
+      errorEl?.classList.add("hidden");
+      window.location.href = `/posta-kodlari/${raw}/`;
+    } else {
+      errorEl?.classList.remove("hidden");
+    }
+  });
+</script>

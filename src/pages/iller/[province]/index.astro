@@ -1,0 +1,510 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import TableOfContents from "@/components/content/TableOfContents.astro";
+import InfoTable from "@/components/content/InfoTable.astro";
+import QuickFacts from "@/components/content/QuickFacts.astro";
+import LocationMapCard from "@/components/geography/LocationMapCard.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import RelatedSearches from "@/components/content/RelatedSearches.astro";
+import SourcesCard from "@/components/content/SourcesCard.astro";
+import QuickToolCard from "@/components/cards/QuickToolCard.astro";
+import SceneArt from "@/components/geography/SceneArt.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces, getNeighborProvinces } from "@/data/provinces";
+import { getRegion } from "@/data/regions";
+import { getDistrictsForProvince } from "@/data/districts";
+import { formatNumber, formatArea, formatElevation } from "@/utils/format";
+import { provinceFaqs } from "@/utils/content";
+import { administrativeAreaSchema, faqPageSchema } from "@/utils/seo";
+
+export function getStaticPaths() {
+  return provinces.map((p) => ({
+    params: { province: p.slug },
+    props: { province: p },
+  }));
+}
+
+const { province } = Astro.props as { province: (typeof provinces)[number] };
+const region = getRegion(province.region);
+const neighborProvinces = getNeighborProvinces(province);
+const districts = getDistrictsForProvince(province.slug);
+const faqs = provinceFaqs(province);
+const path = `/iller/${province.slug}/`;
+const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
+const hue = hues[province.plateCode.charCodeAt(0) % hues.length];
+
+const summaryStats = [
+  { label: "Plaka", value: province.plateCode },
+  {
+    label: "Alan Kodu",
+    value: province.areaCodes.map((c) => `0${c}`).join(" / "),
+  },
+  {
+    label: "İlçe Sayısı",
+    value: province.districtCount ? String(province.districtCount) : "—",
+  },
+  {
+    label: "Mahalle Sayısı",
+    value: province.neighborhoodCount
+      ? formatNumber(province.neighborhoodCount)
+      : "—",
+  },
+  {
+    label: "Nüfus",
+    value: province.population ? formatNumber(province.population) : "—",
+  },
+  { label: "Yüzölçümü", value: formatArea(province.areaKm2) },
+  { label: "Rakım", value: formatElevation(province.elevationM) },
+].filter((s) => s.value && s.value !== "—");
+
+const tocCandidates = [
+  { id: "genel-bakis", label: "Genel Bakış", show: true },
+  { id: "ilceler", label: "İlçeler", show: districts.length > 0 },
+  {
+    id: "cografya",
+    label: "Coğrafya",
+    show: Boolean(
+      province.seas?.length ||
+      province.climate?.length ||
+      neighborProvinces.length ||
+      province.coordinates,
+    ),
+  },
+  { id: "ekonomi", label: "Ekonomi", show: Boolean(province.economy) },
+  {
+    id: "turizm",
+    label: "Turizm",
+    show: Boolean(
+      province.tourism ||
+      province.popularPlaces?.length ||
+      province.famousFor?.length,
+    ),
+  },
+  { id: "ulasim", label: "Ulaşım", show: Boolean(province.transportation) },
+  {
+    id: "egitim",
+    label: "Eğitim",
+    show: Boolean(province.education || province.universities?.length),
+  },
+  { id: "sss", label: "SSS", show: faqs.length > 0 },
+];
+const toc = tocCandidates.filter((t) => t.show);
+
+const relatedSearches = [
+  {
+    label: `${province.plateCode} nerenin plakası?`,
+    href: `/plaka-kodlari/${province.plateCode}/`,
+  },
+  ...province.areaCodes.map((c) => ({
+    label: `${c} nerenin alan kodu?`,
+    href: `/alan-kodlari/${c}/`,
+  })),
+  ...(districts.length > 0
+    ? [
+        {
+          label: `${province.name} ilçeleri`,
+          href: `/iller/${province.slug}/ilceler/`,
+        },
+      ]
+    : []),
+  ...neighborProvinces
+    .slice(0, 2)
+    .map((n) => ({ label: `${n.name} ili`, href: `/iller/${n.slug}/` })),
+  { label: "Tüm iller", href: "/iller/" },
+];
+---
+
+<BaseLayout
+  title={`${province.name} — İl Bilgileri, İlçeleri, Plaka ve Alan Kodu`}
+  description={province.summary ??
+    `${province.name} ili hakkında plaka kodu, alan kodu, ilçeleri, nüfusu ve coğrafi bilgiler.`}
+  path={path}
+  image={province.heroImage}
+  schema={[
+    administrativeAreaSchema({
+      name: province.name,
+      path,
+      description: province.summary ?? `${province.name} ili`,
+      containedIn: "Türkiye",
+      latitude: province.coordinates?.lat,
+      longitude: province.coordinates?.lng,
+    }),
+    ...(faqs.length > 0 ? [faqPageSchema(faqs)] : []),
+  ]}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "İller", href: "/iller/" },
+        { label: province.name, href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <!-- Hero -->
+  <PageContainer>
+    <div class="relative overflow-hidden rounded-3xl">
+      <SceneArt
+        seed={province.slug}
+        hue={hue}
+        class="absolute inset-0 h-full w-full"
+      />
+      <div
+        class="relative flex min-h-64 flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 sm:min-h-64 sm:p-8 lg:min-h-72"
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          {
+            region && (
+              <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                {region.name}
+              </span>
+            )
+          }
+          {
+            province.badge && (
+              <span class="rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white">
+                {province.badge}
+              </span>
+            )
+          }
+        </div>
+        <h1
+          class="mt-3 text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl"
+        >
+          {province.name}
+        </h1>
+        {
+          province.summary && (
+            <p class="mt-1.5 max-w-2xl text-sm text-white/90 sm:text-base">
+              {province.summary}
+            </p>
+          )
+        }
+      </div>
+    </div>
+
+    <!-- Summary stat cards -->
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      {
+        summaryStats.map((s) => (
+          <div class="card p-3 text-center">
+            <p class="text-lg font-extrabold text-text-primary break-words">
+              {s.value}
+            </p>
+            <p class="text-xs text-text-secondary">{s.label}</p>
+          </div>
+        ))
+      }
+    </div>
+  </PageContainer>
+
+  <PageContainer class="mt-6">
+    <TableOfContents items={toc} />
+  </PageContainer>
+
+  <PageContainer class="grid grid-cols-1 gap-8 py-8 lg:grid-cols-[1fr_320px]">
+    <div class="flex flex-col gap-12">
+      <!-- Genel Bakış -->
+      <section
+        id="genel-bakis"
+        aria-labelledby="genel-bakis-heading"
+        class="scroll-mt-32"
+      >
+        <h2
+          id="genel-bakis-heading"
+          class="text-2xl font-extrabold text-text-primary"
+        >
+          Genel Bakış
+        </h2>
+        {
+          province.summary && (
+            <div class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4">
+              <p class="text-sm font-semibold text-text-primary">
+                <strong>{province.summary}</strong>
+              </p>
+            </div>
+          )
+        }
+        {
+          province.overview && (
+            <p class="prose-content mt-4">{province.overview}</p>
+          )
+        }
+        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoTable
+            title="Genel Bilgiler"
+            rows={[
+              { label: "Bölge", value: region?.name ?? "—" },
+              {
+                label: "İdari Merkez",
+                value: province.administrativeCenter ?? "—",
+              },
+              {
+                label: "Komşu İller",
+                value: neighborProvinces.map((n) => n.name).join(", "),
+              },
+              { label: "Denizler", value: province.seas?.join(", ") ?? "" },
+              { label: "İklim", value: province.climate?.join(", ") ?? "" },
+            ]}
+          />
+          <QuickFacts
+            title="Hızlı Bilgiler"
+            facts={[
+              { icon: "car", label: "Plaka Kodu", value: province.plateCode },
+              {
+                icon: "phone",
+                label: "Alan Kodu",
+                value: province.areaCodes.map((c) => `0${c}`).join(" / "),
+              },
+              {
+                icon: "map",
+                label: "İlçe Sayısı",
+                value: province.districtCount
+                  ? `${province.districtCount} ilçe`
+                  : "",
+              },
+              {
+                icon: "mountain",
+                label: "Rakım",
+                value: formatElevation(province.elevationM),
+              },
+            ]}
+          />
+        </div>
+      </section>
+
+      <!-- İlçeler -->
+      {
+        districts.length > 0 && (
+          <section
+            id="ilceler"
+            aria-labelledby="ilceler-heading"
+            class="scroll-mt-32"
+          >
+            <SectionHeader
+              as="h2"
+              id="ilceler-heading"
+              title={`${province.name} İlçeleri`}
+              description={`${province.name} ili ${districts.length} ilçeden oluşur.`}
+              href={`/iller/${province.slug}/ilceler/`}
+              linkLabel="Tüm İlçeleri Gör"
+            />
+            <div class="mt-4 flex flex-wrap gap-2">
+              {districts.map((d) => (
+                <a href={`/iller/${province.slug}/${d.slug}/`} class="pill">
+                  {d.name}
+                </a>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Coğrafya -->
+      {
+        (province.seas?.length ||
+          province.climate?.length ||
+          neighborProvinces.length > 0 ||
+          province.coordinates) && (
+          <section
+            id="cografya"
+            aria-labelledby="cografya-heading"
+            class="scroll-mt-32"
+          >
+            <h2
+              id="cografya-heading"
+              class="text-2xl font-extrabold text-text-primary"
+            >
+              Coğrafya
+            </h2>
+            <div class="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <div class="flex flex-col gap-3">
+                {province.coordinates && (
+                  <p class="prose-content">
+                    {province.name}, yaklaşık{" "}
+                    <strong>
+                      {province.coordinates.lat.toFixed(2)}° Kuzey
+                    </strong>
+                    ,{" "}
+                    <strong>{province.coordinates.lng.toFixed(2)}° Doğu</strong>{" "}
+                    koordinatlarında yer alır.
+                  </p>
+                )}
+                {neighborProvinces.length > 0 && (
+                  <p class="prose-content">
+                    <strong>Komşu iller:</strong>{" "}
+                    {neighborProvinces.map((n) => n.name).join(", ")}.
+                  </p>
+                )}
+                {Boolean(province.seas?.length) && (
+                  <p class="prose-content">
+                    <strong>Kıyısı olan denizler:</strong>{" "}
+                    {province.seas?.join(", ")}.
+                  </p>
+                )}
+              </div>
+              <LocationMapCard
+                regionSlug={province.region}
+                placeName={province.name}
+                coordinates={province.coordinates}
+              />
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Ekonomi -->
+      {
+        province.economy && (
+          <section
+            id="ekonomi"
+            aria-labelledby="ekonomi-heading"
+            class="scroll-mt-32"
+          >
+            <h2
+              id="ekonomi-heading"
+              class="text-2xl font-extrabold text-text-primary"
+            >
+              Ekonomi
+            </h2>
+            <p class="prose-content mt-4">{province.economy}</p>
+          </section>
+        )
+      }
+
+      <!-- Turizm -->
+      {
+        (province.tourism ||
+          province.popularPlaces?.length ||
+          province.famousFor?.length) && (
+          <section
+            id="turizm"
+            aria-labelledby="turizm-heading"
+            class="scroll-mt-32"
+          >
+            <h2
+              id="turizm-heading"
+              class="text-2xl font-extrabold text-text-primary"
+            >
+              Turizm
+            </h2>
+            {province.tourism && (
+              <p class="prose-content mt-4">{province.tourism}</p>
+            )}
+            {province.popularPlaces && province.popularPlaces.length > 0 && (
+              <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {province.popularPlaces.map((p, i) => (
+                  <QuickToolCard
+                    icon={p.icon ?? "map-pin"}
+                    label={p.label}
+                    meta={p.meta}
+                    color={
+                      ["blue", "green", "purple", "orange", "pink", "cyan"][
+                        i % 6
+                      ] as never
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            {province.famousFor && province.famousFor.length > 0 && (
+              <div class="mt-5">
+                <h3 class="text-sm font-bold text-text-primary">
+                  Neyi Meşhur?
+                </h3>
+                <div class="mt-2.5 flex flex-wrap gap-2">
+                  {province.famousFor.map((f) => (
+                    <span class="chip">
+                      <Icon
+                        name={f.icon ?? "star"}
+                        size={13}
+                        class="mr-1.5 text-brand-primary"
+                      />
+                      {f.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )
+      }
+
+      <!-- Ulaşım -->
+      {
+        province.transportation && (
+          <section
+            id="ulasim"
+            aria-labelledby="ulasim-heading"
+            class="scroll-mt-32"
+          >
+            <h2
+              id="ulasim-heading"
+              class="text-2xl font-extrabold text-text-primary"
+            >
+              Ulaşım
+            </h2>
+            <p class="prose-content mt-4">{province.transportation}</p>
+          </section>
+        )
+      }
+
+      <!-- Eğitim -->
+      {
+        (province.education || province.universities?.length) && (
+          <section
+            id="egitim"
+            aria-labelledby="egitim-heading"
+            class="scroll-mt-32"
+          >
+            <h2
+              id="egitim-heading"
+              class="text-2xl font-extrabold text-text-primary"
+            >
+              Eğitim
+            </h2>
+            {province.education && (
+              <p class="prose-content mt-4">{province.education}</p>
+            )}
+            {province.universities && province.universities.length > 0 && (
+              <ul class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {province.universities.map((u) => (
+                  <li class="flex items-center gap-2 rounded-xl border border-border px-3.5 py-2.5 text-sm text-text-secondary">
+                    <Icon
+                      name="graduation-cap"
+                      size={15}
+                      class="shrink-0 text-brand-primary"
+                    />
+                    {u}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )
+      }
+
+      <AdSlot variant="in-article" />
+
+      <!-- SSS -->
+      <div id="sss" class="scroll-mt-32">
+        <FAQAccordion faqs={faqs} />
+      </div>
+
+      <RelatedSearches items={relatedSearches} />
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
+      <AdSlot variant="sidebar" />
+      <SourcesCard
+        sources={province.sources}
+        lastReviewed={province.lastReviewed}
+      />
+    </aside>
+  </PageContainer>
+</BaseLayout>

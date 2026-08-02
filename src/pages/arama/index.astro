@@ -1,0 +1,239 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SearchBox from "@/components/search/SearchBox.astro";
+import SearchSuggestionChips from "@/components/search/SearchSuggestionChips.astro";
+import Icon from "@/components/Icon.astro";
+
+const path = "/arama/";
+
+const tabs = [
+  { key: "all", label: "Tümü" },
+  { key: "province", label: "İller" },
+  { key: "district", label: "İlçeler" },
+  { key: "neighborhood", label: "Mahalleler" },
+  { key: "plate", label: "Plaka" },
+  { key: "area-code", label: "Alan Kodları" },
+  { key: "postal-code", label: "Posta Kodları" },
+  { key: "page", label: "Diğer" },
+];
+
+const popularQueries = [
+  { label: "47 nerenin plakası?", href: "/arama/?q=47" },
+  { label: "312 nerenin kodu?", href: "/arama/?q=312" },
+  { label: "İstanbul ilçeleri", href: "/arama/?q=istanbul" },
+  { label: "Kadıköy mahalleleri", href: "/arama/?q=kadıköy" },
+  { label: "34718 posta kodu", href: "/arama/?q=34718" },
+];
+---
+
+<BaseLayout
+  title="Arama"
+  description="illerilceler.com içinde il, ilçe, mahalle, plaka kodu, alan kodu ve posta kodu arayın."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Arama", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-2xl font-extrabold text-text-primary sm:text-3xl">
+      <span id="search-heading-prefix">Arama Sonuçları</span>
+    </h1>
+    <p id="search-result-count" class="mt-1 text-sm text-text-secondary"></p>
+
+    <SearchBox size="md" class="mt-5 max-w-2xl" />
+
+    <nav
+      aria-label="Sonuç türüne göre filtrele"
+      class="scrollbar-none mt-6 overflow-x-auto"
+    >
+      <ul class="flex min-w-max items-center gap-1.5" id="search-tabs">
+        {
+          tabs.map((tab) => (
+            <li>
+              <a
+                href="#"
+                data-tab={tab.key}
+                class="search-tab inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-semibold text-text-secondary transition-colors hover:border-brand-primary hover:text-brand-primary aria-selected:border-brand-primary aria-selected:bg-brand-purple-soft aria-selected:text-brand-primary"
+                aria-selected={tab.key === "all" ? "true" : "false"}
+              >
+                {tab.label}
+                <span
+                  class="search-tab-count text-xs text-text-muted"
+                  data-count-for={tab.key}
+                />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div
+      id="search-results"
+      class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2"
+      aria-live="polite"
+    >
+    </div>
+
+    <div id="search-empty" class="hidden py-16 text-center">
+      <Icon name="search-x" size={40} class="mx-auto text-text-muted" />
+      <p class="mt-4 text-lg font-bold text-text-primary">Sonuç bulunamadı</p>
+      <p class="mt-1.5 text-sm text-text-secondary">
+        Farklı bir arama terimi deneyin veya popüler aramalardan birini seçin.
+      </p>
+      <SearchSuggestionChips
+        label=""
+        items={popularQueries}
+        class="mt-6 justify-center"
+      />
+    </div>
+
+    <div id="search-idle" class="py-16 text-center">
+      <Icon name="search" size={40} class="mx-auto text-text-muted" />
+      <p class="mt-4 text-lg font-bold text-text-primary">Aramaya başlayın</p>
+      <p class="mt-1.5 text-sm text-text-secondary">
+        Bir il, ilçe, mahalle adı ya da plaka/alan/posta kodu yazın.
+      </p>
+      <SearchSuggestionChips
+        label=""
+        items={popularQueries}
+        class="mt-6 justify-center"
+      />
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  import { searchAll, countByType } from "@/utils/search";
+  import type { SearchIndexEntry, SearchResultType } from "@/types";
+  import { accentClasses } from "@/utils/colors";
+
+  const typeMeta: Record<
+    SearchResultType,
+    { label: string; icon: string; color: keyof typeof accentClasses }
+  > = {
+    province: { label: "İl", icon: "building-2", color: "blue" },
+    district: { label: "İlçe", icon: "map", color: "purple" },
+    neighborhood: { label: "Mahalle", icon: "home", color: "green" },
+    plate: { label: "Plaka Kodu", icon: "car", color: "orange" },
+    "area-code": { label: "Alan Kodu", icon: "phone", color: "pink" },
+    "postal-code": { label: "Posta Kodu", icon: "mail", color: "cyan" },
+    page: { label: "Sayfa", icon: "file-text", color: "purple" },
+  };
+
+  const ICON_PATHS: Record<string, string> = {
+    "building-2":
+      '<path d="M10 12h4"/><path d="M10 8h4"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/>',
+    map: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
+    home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+    phone:
+      '<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/>',
+    mail: '<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/>',
+    "file-text":
+      '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  };
+
+  function iconSvg(name: string): string {
+    const path = ICON_PATHS[name] ?? "";
+    return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+  }
+
+  const resultsEl = document.getElementById("search-results");
+  const emptyEl = document.getElementById("search-empty");
+  const idleEl = document.getElementById("search-idle");
+  const headingPrefix = document.getElementById("search-heading-prefix");
+  const countEl = document.getElementById("search-result-count");
+  const tabsEl = document.getElementById("search-tabs");
+  const input = document.getElementById(
+    "site-search-input",
+  ) as HTMLInputElement | null;
+
+  function cardHtml(r: SearchIndexEntry): string {
+    const meta = typeMeta[r.type];
+    const accent = accentClasses[meta.color];
+    return `
+      <a href="${r.href}" class="card card-hover flex items-center gap-4 p-4">
+        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent.bg} ${accent.text}">${iconSvg(meta.icon)}</span>
+        <span class="min-w-0 flex-1">
+          <span class="flex items-center gap-2">
+            <span class="truncate text-[15px] font-bold text-text-primary">${r.title}</span>
+            <span class="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-text-muted">${meta.label}</span>
+          </span>
+          ${r.subtitle ? `<span class="mt-0.5 block truncate text-sm text-text-secondary">${r.subtitle}</span>` : ""}
+        </span>
+      </a>`;
+  }
+
+  function getParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      q: params.get("q") ?? "",
+      type: (params.get("type") as SearchResultType | "all") ?? "all",
+    };
+  }
+
+  async function render() {
+    const { q, type } = getParams();
+    if (input) input.value = q;
+
+    if (!q.trim()) {
+      if (headingPrefix) headingPrefix.textContent = "Arama Sonuçları";
+      if (countEl) countEl.textContent = "";
+      idleEl?.classList.remove("hidden");
+      emptyEl?.classList.add("hidden");
+      if (resultsEl) resultsEl.innerHTML = "";
+      return;
+    }
+
+    idleEl?.classList.add("hidden");
+    const mod = await import("@/data/searchIndex");
+    const allResults = searchAll(q, mod.searchIndex, { limit: 200 });
+    const counts = countByType(allResults);
+    const total = allResults.length;
+
+    tabsEl
+      ?.querySelectorAll<HTMLAnchorElement>(".search-tab")
+      .forEach((tab) => {
+        const key = tab.dataset.tab as string;
+        tab.href = `?q=${encodeURIComponent(q)}${key === "all" ? "" : `&type=${key}`}`;
+        tab.setAttribute("aria-selected", String(key === type));
+        const countSpan = tab.querySelector<HTMLElement>(".search-tab-count");
+        const c = key === "all" ? total : (counts[key] ?? 0);
+        if (countSpan) countSpan.textContent = c ? `(${c})` : "";
+      });
+
+    const filtered =
+      type === "all" ? allResults : allResults.filter((r) => r.type === type);
+
+    if (headingPrefix)
+      headingPrefix.textContent = `"${q}" için arama sonuçları`;
+    if (countEl) countEl.textContent = `${filtered.length} sonuç bulundu`;
+
+    if (filtered.length === 0) {
+      emptyEl?.classList.remove("hidden");
+      if (resultsEl) resultsEl.innerHTML = "";
+      return;
+    }
+
+    emptyEl?.classList.add("hidden");
+    if (resultsEl) {
+      resultsEl.innerHTML = filtered.map(cardHtml).join("");
+    }
+  }
+
+  render();
+  window.addEventListener("popstate", render);
+  tabsEl?.addEventListener("click", (e) => {
+    const link = (e.target as HTMLElement).closest<HTMLAnchorElement>(
+      ".search-tab",
+    );
+    if (!link) return;
+    e.preventDefault();
+    window.history.pushState({}, "", link.href);
+    render();
+  });
+</script>

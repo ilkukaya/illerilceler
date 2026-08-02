@@ -1,0 +1,30 @@
+---
+import Icon from "@/components/Icon.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  href: string;
+  meta?: string;
+  icon?: string;
+}
+
+const { title, description, href, meta, icon = "puzzle" } = Astro.props;
+---
+
+<a href={href} class="card card-hover flex flex-col gap-3 p-5">
+  <div class="flex items-center justify-between">
+    <span
+      class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-orange-soft text-brand-orange"
+    >
+      <Icon name={icon} size={20} />
+    </span>
+    {meta && <span class="chip">{meta}</span>}
+  </div>
+  <span class="text-base font-extrabold text-text-primary">{title}</span>
+  <span class="text-sm text-text-secondary">{description}</span>
+  <span class="btn btn-secondary mt-1 w-full">
+    Başla
+    <Icon name="arrow-right" size={15} />
+  </span>
+</a>

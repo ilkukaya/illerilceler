@@ -1,0 +1,145 @@
+---
+import Logo from "@/components/brand/Logo.astro";
+import Icon from "@/components/Icon.astro";
+import { siteConfig } from "@/config/site";
+
+const columns = [
+  {
+    title: "İller & İlçeler",
+    links: [
+      { label: "Tüm İller", href: "/iller/" },
+      { label: "İstanbul", href: "/iller/istanbul/" },
+      { label: "Ankara", href: "/iller/ankara/" },
+      { label: "İzmir", href: "/iller/izmir/" },
+      { label: "İstanbul İlçeleri", href: "/iller/istanbul/ilceler/" },
+      { label: "Tüm İlçeler", href: "/ilceler/" },
+    ],
+  },
+  {
+    title: "Kodlar",
+    links: [
+      { label: "Plaka Kodları", href: "/plaka-kodlari/" },
+      { label: "Alan Kodları", href: "/alan-kodlari/" },
+      { label: "Posta Kodları", href: "/posta-kodlari/" },
+      { label: "47 Nerenin Plakası?", href: "/plaka-kodlari/47/" },
+      { label: "312 Nerenin Kodu?", href: "/alan-kodlari/312/" },
+    ],
+  },
+  {
+    title: "Haritalar & Veri",
+    links: [
+      { label: "Türkiye Haritası", href: "/haritalar/turkiye-haritasi/" },
+      { label: "İstatistikler", href: "/istatistikler/" },
+      {
+        label: "En Kalabalık İller",
+        href: "/istatistikler/en-kalabalik-iller/",
+      },
+      { label: "Mahalleler", href: "/mahalleler/" },
+      { label: "Köyler", href: "/koyler/" },
+    ],
+  },
+  {
+    title: "Eğitim & Araçlar",
+    links: [
+      { label: "Eğitim Köşesi", href: "/egitim/" },
+      { label: "Quiz", href: "/egitim/quiz/" },
+      { label: "81 İl ve Plakaları", href: "/egitim/81-il-ve-plakalari/" },
+      {
+        label: "Şehirler Arası Mesafe",
+        href: "/araclar/iki-sehir-arasi-mesafe/",
+      },
+    ],
+  },
+  {
+    title: "Kurumsal",
+    links: [
+      { label: "Rehber", href: "/rehber/" },
+      { label: "Kaynaklar", href: "/rehber/#kaynaklar" },
+      { label: "Gizlilik Politikası", href: "/gizlilik/" },
+      { label: "Çerez Politikası", href: "/cerez-politikasi/" },
+      { label: "Kullanım Koşulları", href: "/kullanim-kosullari/" },
+      { label: "İletişim", href: "/iletisim/" },
+    ],
+  },
+];
+
+const socialLinks = [
+  { label: "Instagram", icon: "instagram", href: siteConfig.social.instagram },
+  { label: "Facebook", icon: "facebook", href: siteConfig.social.facebook },
+  { label: "Twitter / X", icon: "twitter", href: siteConfig.social.twitter },
+  { label: "YouTube", icon: "youtube", href: siteConfig.social.youtube },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border bg-surface">
+  <div class="container-page py-12">
+    <div
+      class="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-6"
+    >
+      <div class="col-span-2 sm:col-span-3 lg:col-span-1">
+        <Logo size="sm" />
+        <p class="mt-4 max-w-xs text-sm leading-relaxed text-text-secondary">
+          Türkiye'nin illeri, ilçeleri, mahalleleri, plaka ve alan kodları
+          hakkında güvenilir, güncel ve anlaşılır bilgi kaynağı.
+        </p>
+        <div class="mt-5 flex items-center gap-2">
+          {
+            socialLinks.map((s) => (
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:border-brand-primary hover:text-brand-primary"
+              >
+                <Icon name={s.icon} size={16} />
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      {
+        columns.map((col) => (
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wide text-text-muted">
+              {col.title}
+            </h3>
+            <ul class="mt-4 flex flex-col gap-2.5">
+              {col.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-sm text-text-secondary transition-colors hover:text-brand-primary"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div
+      class="mt-10 rounded-2xl border border-border bg-surface-muted px-5 py-4"
+    >
+      <p
+        class="flex items-start gap-2.5 text-xs leading-relaxed text-text-secondary"
+      >
+        <Icon name="info" size={15} class="mt-0.5 shrink-0 text-text-muted" />
+        {siteConfig.disclaimer}
+      </p>
+    </div>
+
+    <div
+      class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-text-muted sm:flex-row"
+    >
+      <p>© {year} illerilceler.com — Tüm hakları saklıdır.</p>
+      <p>Türkiye Bilgi Merkezi</p>
+    </div>
+  </div>
+</footer>

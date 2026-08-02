@@ -1,0 +1,29 @@
+{
+  "name": "illerilceler-com",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "format": "prettier --write .",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "astro": "^7.1.6",
+    "lucide-static": "^1.28.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,24 @@
+---
+import { regions } from "@/data/regions";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+---
+
+<ul class:list={["flex flex-wrap gap-x-4 gap-y-2", className]}>
+  {
+    regions.map((region) => (
+      <li class="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+        <span
+          class="h-2.5 w-2.5 rounded-full"
+          style={`background-color:${region.color}`}
+          aria-hidden="true"
+        />
+        {region.name.replace(" Bölgesi", "")}
+      </li>
+    ))
+  }
+</ul>

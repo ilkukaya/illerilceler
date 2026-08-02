@@ -1,0 +1,53 @@
+---
+import SceneArt from "@/components/geography/SceneArt.astro";
+import { formatNumber } from "@/utils/format";
+import type { District } from "@/types";
+
+interface Props {
+  district: District;
+  provinceSlug: string;
+}
+
+const { district, provinceSlug } = Astro.props;
+const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
+const hue = hues[district.slug.charCodeAt(0) % hues.length];
+---
+
+<a
+  href={`/iller/${provinceSlug}/${district.slug}/`}
+  class="card card-hover group flex flex-col overflow-hidden"
+>
+  <div class="relative h-24 w-full overflow-hidden">
+    <SceneArt seed={district.slug} hue={hue} class="h-full w-full" />
+    <span
+      class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent px-3.5 pb-2 pt-5 text-base font-extrabold text-white"
+    >
+      {district.name}
+    </span>
+  </div>
+  <div class="flex flex-col gap-2 p-3.5 text-sm">
+    {
+      district.summary && (
+        <p class="line-clamp-2 text-xs text-text-secondary">
+          {district.summary}
+        </p>
+      )
+    }
+    <div
+      class="mt-auto flex items-center justify-between border-t border-border pt-2.5 text-xs"
+    >
+      <span class="text-text-muted">
+        Nüfus <strong class="text-text-primary"
+          >{
+            district.population ? formatNumber(district.population) : "—"
+          }</strong
+        >
+      </span>
+      <span class="text-text-muted">
+        Mahalle <strong class="text-text-primary"
+          >{district.neighborhoodCount ?? "—"}</strong
+        >
+      </span>
+    </div>
+  </div>
+</a>

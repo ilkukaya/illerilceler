@@ -1,0 +1,79 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import { siteConfig } from "@/config/site";
+
+const path = "/gizlilik/";
+---
+
+<BaseLayout
+  title="Gizlilik Politikası"
+  description="illerilceler.com gizlilik politikası."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Gizlilik Politikası", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="max-w-3xl pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary">
+      Gizlilik Politikası
+    </h1>
+    <p class="mt-2 text-sm text-text-muted">Son güncelleme: Ocak 2026</p>
+
+    <div class="prose-content mt-8 flex flex-col gap-6">
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">
+          1. Genel Bilgilendirme
+        </h2>
+        <p class="mt-2">
+          {siteConfig.name} ("Platform") olarak ziyaretçilerimizin gizliliğine önem
+          veriyoruz. Bu Gizlilik Politikası, Platform'u kullanırken hangi verilerin
+          nasıl işlendiğini açıklamaktadır.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">2. Toplanan Veriler</h2>
+        <p class="mt-2">
+          Platform, üyelik veya hesap oluşturma gerektirmez. Ziyaretiniz
+          sırasında tarayıcınız tarafından otomatik olarak iletilen standart
+          teknik veriler (IP adresi, tarayıcı türü, ziyaret edilen sayfalar,
+          ziyaret süresi gibi) anonim istatistik ve site performansını
+          iyileştirme amacıyla işlenebilir.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">3. Çerezler</h2>
+        <p class="mt-2">
+          Tema tercihi ve favoriler gibi işlevler için tarayıcınızın yerel
+          depolama alanı kullanılır. Detaylı bilgi için
+          <a
+            href="/cerez-politikasi/"
+            class="font-semibold text-brand-primary hover:underline"
+            >Çerez Politikası</a
+          > sayfamızı inceleyebilirsiniz.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">
+          4. Üçüncü Taraf Hizmetler
+        </h2>
+        <p class="mt-2">
+          Platform'da yer alabilecek reklam alanları ve analitik araçlar, ilgili
+          üçüncü taraf sağlayıcıların kendi gizlilik politikalarına tabidir.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">5. İletişim</h2>
+        <p class="mt-2">
+          Gizlilik politikamızla ilgili sorularınız için <a
+            href="/iletisim/"
+            class="font-semibold text-brand-primary hover:underline">İletişim</a
+          >
+          sayfamızdan bize ulaşabilirsiniz.
+        </p>
+      </section>
+    </div>
+  </PageContainer>
+</BaseLayout>

@@ -1,0 +1,39 @@
+---
+import TurkeyMap from "@/components/geography/TurkeyMap.astro";
+import Icon from "@/components/Icon.astro";
+import { getRegion } from "@/data/regions";
+
+interface Props {
+  regionSlug: string;
+  placeName: string;
+  coordinates?: { lat: number; lng: number };
+  title?: string;
+}
+
+const { regionSlug, placeName, coordinates, title = "Konum" } = Astro.props;
+const region = getRegion(regionSlug);
+---
+
+<div class="card p-4 sm:p-5">
+  <div class="mb-3 flex items-center justify-between">
+    <h3 class="text-sm font-bold text-text-primary">{title}</h3>
+    {
+      coordinates && (
+        <span class="text-xs text-text-muted">
+          {coordinates.lat.toFixed(2)}° K, {coordinates.lng.toFixed(2)}° D
+        </span>
+      )
+    }
+  </div>
+  <TurkeyMap compact highlightRegion={regionSlug} />
+  <p
+    class="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-text-secondary"
+  >
+    <Icon name="map-pin" size={14} class="mt-0.5 shrink-0 text-brand-primary" />
+    <span>
+      <strong class="text-text-primary">{placeName}</strong>, Türkiye'nin {
+        region?.name ?? ""
+      } bölgesinde yer alır.
+    </span>
+  </p>
+</div>

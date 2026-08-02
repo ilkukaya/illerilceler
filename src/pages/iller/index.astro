@@ -1,0 +1,216 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import CityCard from "@/components/cards/CityCard.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+import { regions } from "@/data/regions";
+import { itemListSchema } from "@/utils/seo";
+import StructuredData from "@/components/seo/StructuredData.astro";
+
+const path = "/iller/";
+const sorted = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+---
+
+<BaseLayout
+  title="Türkiye'nin İlleri — 81 İl Listesi"
+  description="Türkiye'nin 81 ilini plaka kodu, alan kodu, bölge, nüfus ve ilçe sayısına göre keşfedin."
+  path={path}
+>
+  <StructuredData
+    schema={itemListSchema(
+      sorted.map((p) => ({ name: p.name, href: `/iller/${p.slug}/` })),
+    )}
+  />
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "İller", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Türkiye'nin İlleri
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye 81 ilden oluşur. Aşağıdan bölgeye göre filtreleyebilir, il adına
+      göre arayabilir veya sıralama seçeneklerini kullanabilirsiniz.
+    </p>
+
+    <div class="mt-6 flex flex-col gap-4">
+      <div class="relative max-w-md">
+        <Icon
+          name="search"
+          size={18}
+          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+        />
+        <input
+          id="province-search"
+          type="text"
+          placeholder="İl adı ara..."
+          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
+        />
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div
+          class="scrollbar-none flex items-center gap-2 overflow-x-auto"
+          id="region-filters"
+        >
+          <button
+            type="button"
+            data-region="all"
+            class="region-filter-btn pill !py-1.5"
+            aria-pressed="true">Tümü</button
+          >
+          {
+            regions.map((r) => (
+              <button
+                type="button"
+                data-region={r.slug}
+                class="region-filter-btn pill !py-1.5"
+                aria-pressed="false"
+              >
+                {r.name.replace(" Bölgesi", "")}
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label
+            for="province-sort"
+            class="text-xs font-semibold text-text-muted">Sırala:</label
+          >
+          <select
+            id="province-sort"
+            class="h-10 rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
+          >
+            <option value="name-asc">Alfabetik (A-Z)</option>
+            <option value="name-desc">Alfabetik (Z-A)</option>
+            <option value="plate-asc">Plaka Koduna Göre</option>
+            <option value="population-desc">Nüfusa Göre (Çok-Az)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-4 text-sm text-text-secondary" id="province-result-count">
+      {sorted.length} il listeleniyor
+    </p>
+
+    <div
+      class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      id="province-grid"
+    >
+      {
+        sorted.map((p) => (
+          <div
+            class="province-grid-item"
+            data-name={p.name}
+            data-region={p.region}
+            data-plate={p.plateCode}
+            data-population={p.population ?? 0}
+          >
+            <CityCard province={p} />
+          </div>
+        ))
+      }
+    </div>
+
+    <p
+      id="province-empty"
+      class="hidden py-16 text-center text-sm text-text-secondary"
+    >
+      Aramanızla eşleşen il bulunamadı.
+    </p>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  const searchInput = document.getElementById(
+    "province-search",
+  ) as HTMLInputElement | null;
+  const sortSelect = document.getElementById(
+    "province-sort",
+  ) as HTMLSelectElement | null;
+  const grid = document.getElementById("province-grid");
+  const emptyState = document.getElementById("province-empty");
+  const countEl = document.getElementById("province-result-count");
+  const regionButtons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>(".region-filter-btn"),
+  );
+  const items = Array.from(
+    document.querySelectorAll<HTMLElement>(".province-grid-item"),
+  );
+
+  let activeRegion = "all";
+
+  function applyFilters() {
+    const q = (searchInput?.value ?? "").trim().toLocaleLowerCase("tr-TR");
+    let visible = 0;
+    items.forEach((el) => {
+      const matchesRegion =
+        activeRegion === "all" || el.dataset.region === activeRegion;
+      const matchesQuery =
+        !q || (el.dataset.name ?? "").toLocaleLowerCase("tr-TR").includes(q);
+      const show = matchesRegion && matchesQuery;
+      el.classList.toggle("hidden", !show);
+      if (show) visible++;
+    });
+    if (countEl) countEl.textContent = `${visible} il listeleniyor`;
+    emptyState?.classList.toggle("hidden", visible !== 0);
+    grid?.classList.toggle("hidden", visible === 0);
+  }
+
+  function applySort() {
+    const value = sortSelect?.value ?? "name-asc";
+    const sorted = [...items].sort((a, b) => {
+      switch (value) {
+        case "name-desc":
+          return (b.dataset.name ?? "").localeCompare(
+            a.dataset.name ?? "",
+            "tr",
+          );
+        case "plate-asc":
+          return (a.dataset.plate ?? "").localeCompare(b.dataset.plate ?? "");
+        case "population-desc":
+          return Number(b.dataset.population) - Number(a.dataset.population);
+        default:
+          return (a.dataset.name ?? "").localeCompare(
+            b.dataset.name ?? "",
+            "tr",
+          );
+      }
+    });
+    sorted.forEach((el) => grid?.appendChild(el));
+  }
+
+  searchInput?.addEventListener("input", applyFilters);
+  sortSelect?.addEventListener("change", applySort);
+
+  regionButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeRegion = btn.dataset.region ?? "all";
+      regionButtons.forEach((b) =>
+        b.setAttribute("aria-pressed", String(b === btn)),
+      );
+      applyFilters();
+    });
+  });
+
+  const urlRegion = new URLSearchParams(window.location.search).get("bolge");
+  if (urlRegion) {
+    const match = regionButtons.find((b) => b.dataset.region === urlRegion);
+    if (match) match.click();
+  }
+</script>
+
+<style>
+  .region-filter-btn[aria-pressed="true"] {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+    background-color: var(--brand-purple-soft);
+  }
+</style>

@@ -1,0 +1,281 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import LargeCodeHero from "@/components/code-pages/LargeCodeHero.astro";
+import CodeSummaryCard from "@/components/code-pages/CodeSummaryCard.astro";
+import LocationMapCard from "@/components/geography/LocationMapCard.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import RelatedSearches from "@/components/content/RelatedSearches.astro";
+import SourcesCard from "@/components/content/SourcesCard.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import Icon from "@/components/Icon.astro";
+import { postalCodes, getNearbyPostalCodes } from "@/data/postalCodes";
+import { getProvinceBySlug } from "@/data/provinces";
+import { getDistrictBySlug } from "@/data/districts";
+import {
+  getNeighborhoodBySlug,
+  getNeighborhoodsForDistrict,
+} from "@/data/neighborhoods";
+import { getRegion } from "@/data/regions";
+import { faqPageSchema, webPageSchema } from "@/utils/seo";
+import StructuredData from "@/components/seo/StructuredData.astro";
+
+export function getStaticPaths() {
+  return postalCodes.map((pc) => ({
+    params: { code: pc.code },
+    props: { postalCode: pc },
+  }));
+}
+
+const { postalCode } = Astro.props as {
+  postalCode: (typeof postalCodes)[number];
+};
+const province = getProvinceBySlug(postalCode.provinceSlug)!;
+const district = postalCode.districtSlug
+  ? getDistrictBySlug(postalCode.provinceSlug, postalCode.districtSlug)
+  : undefined;
+const neighborhood =
+  postalCode.districtSlug && postalCode.neighborhoodSlug
+    ? getNeighborhoodBySlug(
+        postalCode.provinceSlug,
+        postalCode.districtSlug,
+        postalCode.neighborhoodSlug,
+      )
+    : undefined;
+const region = getRegion(province.region);
+const nearby = getNearbyPostalCodes(postalCode.code);
+const districtNeighborhoods = postalCode.districtSlug
+  ? getNeighborhoodsForDistrict(
+      postalCode.provinceSlug,
+      postalCode.districtSlug,
+    )
+  : [];
+const path = `/posta-kodlari/${postalCode.code}/`;
+
+const locationParts = [
+  neighborhood?.name,
+  district?.name,
+  province.name,
+].filter(Boolean);
+const locationLabel = locationParts.join(" / ");
+const answer = neighborhood
+  ? `${postalCode.code} posta kodu, ${province.name} ili ${district?.name} ilçesi ${neighborhood.name} mahallesine aittir.`
+  : district
+    ? `${postalCode.code} posta kodu, ${province.name} ili ${district.name} ilçesine aittir.`
+    : `${postalCode.code} posta kodu ${province.name} iline aittir.`;
+
+const faqs = [
+  { question: `${postalCode.code} posta kodu nereye ait?`, answer },
+  ...(district
+    ? [
+        {
+          question: `${postalCode.code} hangi ilçeye bağlı?`,
+          answer: `${postalCode.code} posta kodu, ${district.name} ilçesine bağlıdır.`,
+        },
+      ]
+    : []),
+  ...(neighborhood
+    ? [
+        {
+          question: `${postalCode.code} hangi mahalleye ait?`,
+          answer: `${postalCode.code} posta kodu ${neighborhood.name} mahallesine aittir.`,
+        },
+      ]
+    : []),
+  {
+    question: `${province.name} posta kodları kaç haneli?`,
+    answer:
+      "Türkiye'de posta kodları 5 hanelidir; ilk iki hane ili temsil eder.",
+  },
+];
+
+const relatedSearches = [
+  {
+    label: `${province.plateCode} nerenin plakası?`,
+    href: `/plaka-kodlari/${province.plateCode}/`,
+  },
+  { label: `${province.name} ili`, href: `/iller/${province.slug}/` },
+  ...(district
+    ? [
+        {
+          label: `${district.name} ilçesi`,
+          href: `/iller/${province.slug}/${district.slug}/`,
+        },
+      ]
+    : []),
+  ...nearby
+    .slice(0, 3)
+    .map((p) => ({
+      label: `${p.code} posta kodu`,
+      href: `/posta-kodlari/${p.code}/`,
+    })),
+  { label: "Tüm posta kodları", href: "/posta-kodlari/" },
+];
+---
+
+<BaseLayout
+  title={`${postalCode.code} Posta Kodu Nereye Ait? — ${locationLabel}`}
+  description={`${answer} Yakın posta kodları ve adres örneği ile birlikte detaylı bilgi.`}
+  path={path}
+>
+  <StructuredData
+    schema={[
+      webPageSchema({
+        name: `${postalCode.code} Posta Kodu`,
+        path,
+        description: answer,
+      }),
+      faqPageSchema(faqs),
+    ]}
+  />
+
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Posta Kodları", href: "/posta-kodlari/" },
+        { label: postalCode.code, href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-12">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+      <div class="flex flex-col gap-10">
+        <section aria-labelledby="quick-answer">
+          <h1
+            id="quick-answer"
+            class="text-3xl font-extrabold text-text-primary sm:text-4xl"
+          >
+            {postalCode.code} Posta Kodu Nereye Ait?
+          </h1>
+          <div
+            class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
+          >
+            <p class="text-base font-semibold text-text-primary sm:text-lg">
+              <strong>{answer}</strong>
+            </p>
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col items-start gap-6 sm:flex-row sm:items-center"
+        >
+          <LargeCodeHero
+            code={postalCode.code}
+            label={locationLabel}
+            prefix="Posta Kodu"
+          />
+          <div>
+            <p class="text-2xl font-extrabold text-text-primary">
+              {locationLabel}
+            </p>
+            <p class="text-sm text-text-secondary">{region?.name}</p>
+            {
+              district && (
+                <a
+                  href={`/iller/${province.slug}/${district.slug}/`}
+                  class="btn btn-primary mt-3"
+                >
+                  {district.name} İlçe Sayfasına Git
+                </a>
+              )
+            }
+          </div>
+        </section>
+
+        <section
+          class="card flex flex-col gap-3 p-5"
+          aria-labelledby="adres-ornegi-heading"
+        >
+          <h2
+            id="adres-ornegi-heading"
+            class="flex items-center gap-2 text-lg font-extrabold text-text-primary"
+          >
+            <Icon name="mail" size={18} class="text-brand-primary" />
+            Adres Örneği
+          </h2>
+          <address
+            class="not-italic text-sm leading-relaxed text-text-secondary"
+          >
+            {
+              neighborhood
+                ? `${neighborhood.name} Mahallesi, ... Sokak No: .. / ..`
+                : "... Mahallesi, ... Sokak No: .. / .."
+            }
+            <br />
+            {district ? `${district.name} / ${province.name}` : province.name}
+            <br />
+            <strong class="text-text-primary">{postalCode.code}</strong>
+          </address>
+        </section>
+
+        {
+          districtNeighborhoods.length > 0 && (
+            <section aria-labelledby="mahalleler-heading">
+              <h2
+                id="mahalleler-heading"
+                class="text-xl font-extrabold text-text-primary"
+              >
+                Bu Bölgedeki Mahalleler
+              </h2>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {districtNeighborhoods.map((n) => (
+                  <span class="pill cursor-default">{n.name}</span>
+                ))}
+              </div>
+            </section>
+          )
+        }
+
+        {
+          nearby.length > 0 && (
+            <section aria-labelledby="komsu-posta-kodlari-heading">
+              <h2
+                id="komsu-posta-kodlari-heading"
+                class="text-xl font-extrabold text-text-primary"
+              >
+                Komşu Posta Kodları
+              </h2>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {nearby.map((p) => (
+                  <a href={`/posta-kodlari/${p.code}/`} class="pill font-mono">
+                    {p.code}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )
+        }
+
+        <AdSlot variant="in-article" />
+
+        <FAQAccordion faqs={faqs} />
+        <RelatedSearches items={relatedSearches} />
+      </div>
+
+      <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
+        <CodeSummaryCard
+          ctaHref={`/iller/${province.slug}/`}
+          ctaLabel="İl Sayfasını Gör"
+          facts={[
+            { icon: "building-2", label: "İl", value: province.name },
+            { icon: "map", label: "İlçe", value: district?.name ?? "—" },
+            {
+              icon: "home",
+              label: "Mahalle",
+              value: neighborhood?.name ?? "—",
+            },
+            { icon: "compass", label: "Bölge", value: region?.name ?? "—" },
+          ]}
+        />
+        <LocationMapCard
+          regionSlug={province.region}
+          placeName={locationLabel}
+        />
+        <AdSlot variant="sidebar" />
+        <SourcesCard sources={[{ name: "PTT" }]} />
+      </aside>
+    </div>
+  </PageContainer>
+</BaseLayout>

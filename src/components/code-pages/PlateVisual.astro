@@ -1,0 +1,71 @@
+---
+interface Props {
+  code: string;
+  class?: string;
+}
+
+const { code, class: className = "" } = Astro.props;
+---
+
+<div
+  class:list={["plate-visual", className]}
+  role="img"
+  aria-label={`${code} plaka kodu, Türkiye araç plakası görseli`}
+>
+  <div class="plate-visual__band">
+    <span class="plate-visual__stars" aria-hidden="true">★</span>
+    <span class="plate-visual__tr">TR</span>
+  </div>
+  <div class="plate-visual__code">{code}</div>
+</div>
+
+<style>
+  .plate-visual {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+    height: 96px;
+    background: #fefefe;
+    border: 3px solid #17214a;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .plate-visual__band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 46px;
+    background: #1355d7;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .plate-visual__stars {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 1px;
+  }
+
+  .plate-visual__tr {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  .plate-visual__code {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #17214a;
+    font-family: "Plus Jakarta Sans Variable", ui-sans-serif, sans-serif;
+  }
+</style>

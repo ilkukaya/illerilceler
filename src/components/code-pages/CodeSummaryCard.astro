@@ -1,0 +1,46 @@
+---
+import Icon from "@/components/Icon.astro";
+
+interface Fact {
+  icon: string;
+  label: string;
+  value: string;
+}
+
+interface Props {
+  facts: Fact[];
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+const { facts, ctaLabel, ctaHref } = Astro.props;
+const visible = facts.filter((f) => f.value);
+---
+
+<div class="card p-4 sm:p-5">
+  <ul class="flex flex-col gap-3">
+    {
+      visible.map((fact) => (
+        <li class="flex items-center gap-3 text-sm">
+          <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-purple-soft text-brand-primary">
+            <Icon name={fact.icon} size={16} />
+          </span>
+          <span class="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <span class="text-text-secondary">{fact.label}</span>
+            <span class="font-bold text-text-primary text-right">
+              {fact.value}
+            </span>
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+  {
+    ctaHref && (
+      <a href={ctaHref} class="btn btn-primary mt-4 w-full">
+        {ctaLabel ?? "Detaylı Bilgi"}
+        <Icon name="arrow-right" size={16} />
+      </a>
+    )
+  }
+</div>

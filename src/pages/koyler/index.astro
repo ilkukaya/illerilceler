@@ -1,0 +1,95 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+import { siteConfig } from "@/config/site";
+
+const path = "/koyler/";
+const sorted = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+
+const faqs = [
+  {
+    question: "Türkiye'de kaç köy vardır?",
+    answer: `Türkiye genelinde ${siteConfig.stats.villages} köy bulunmaktadır.`,
+  },
+  {
+    question: "Köy ile mahalle arasındaki fark nedir?",
+    answer:
+      "2012'deki düzenlemeyle büyükşehir sınırları içindeki köylerin çoğu mahalleye dönüştürülmüştür; büyükşehir dışındaki yerleşimler köy statüsünü sürdürür.",
+  },
+];
+---
+
+<BaseLayout
+  title="Türkiye'nin Köyleri — Köy Rehberi"
+  description={`Türkiye genelinde ${siteConfig.stats.villages} köy hakkında bilgi edinin.`}
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Köyler", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Türkiye'nin Köyleri
+    </h1>
+    <div
+      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
+    >
+      <p class="text-base font-semibold text-text-primary">
+        <strong
+          >Türkiye genelinde {siteConfig.stats.villages} köy bulunur.</strong
+        > Köy bazlı ayrıntılı içerikler kademeli olarak eklenmektedir.
+      </p>
+    </div>
+
+    <section class="mt-10" aria-labelledby="illere-gore-heading">
+      <SectionHeader
+        as="h2"
+        id="illere-gore-heading"
+        title="İllere Göre Gözat"
+        description="Bir ile ait genel coğrafya bilgilerine ulaşmak için ili seçin."
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          sorted.map((p) => (
+            <a href={`/iller/${p.slug}/`} class="pill">
+              {p.name}
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      class="mt-10 rounded-2xl border border-border bg-surface-muted p-5"
+      aria-labelledby="genisletme-heading"
+    >
+      <h2
+        id="genisletme-heading"
+        class="flex items-center gap-2 text-sm font-bold text-text-primary"
+      >
+        <Icon name="info" size={16} class="text-brand-primary" />
+        Veri Kapsamı Hakkında
+      </h2>
+      <p class="prose-content mt-2 text-sm">
+        Köy düzeyinde ayrıntılı sayfalar şu anda geliştirilmektedir. Güncel ve
+        resmî köy listeleri için
+        <a
+          href="/rehber/"
+          class="font-semibold text-brand-primary hover:underline">Rehber</a
+        > sayfasındaki kaynaklara göz atabilirsiniz.
+      </p>
+    </section>
+
+    <div class="mt-12">
+      <FAQAccordion faqs={faqs} />
+    </div>
+  </PageContainer>
+</BaseLayout>

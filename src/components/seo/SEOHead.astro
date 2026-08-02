@@ -1,0 +1,52 @@
+---
+import { siteConfig } from "@/config/site";
+import { absoluteUrl, pageTitle } from "@/utils/seo";
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  image?: string;
+  type?: "website" | "article";
+  noindex?: boolean;
+  useTemplate?: boolean;
+}
+
+const {
+  title,
+  description,
+  path,
+  image = siteConfig.ogImage,
+  type = "website",
+  noindex = false,
+  useTemplate = true,
+} = Astro.props;
+
+const fullTitle = pageTitle(title, useTemplate);
+const canonical = absoluteUrl(path);
+const ogImage = image.startsWith("http") ? image : absoluteUrl(image);
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+<meta name="theme-color" content={siteConfig.themeColor} />
+
+<meta property="og:type" content={type} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={siteConfig.name} />
+<meta property="og:locale" content="tr_TR" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+{
+  siteConfig.twitterHandle && (
+    <meta name="twitter:site" content={siteConfig.twitterHandle} />
+  )
+}

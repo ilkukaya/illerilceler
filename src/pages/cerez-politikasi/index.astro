@@ -1,0 +1,65 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+
+const path = "/cerez-politikasi/";
+---
+
+<BaseLayout
+  title="Çerez Politikası"
+  description="illerilceler.com çerez politikası."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Çerez Politikası", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="max-w-3xl pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary">Çerez Politikası</h1>
+    <p class="mt-2 text-sm text-text-muted">Son güncelleme: Ocak 2026</p>
+
+    <div class="prose-content mt-8 flex flex-col gap-6">
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">Çerez Nedir?</h2>
+        <p class="mt-2">
+          Çerezler, ziyaret ettiğiniz web siteleri tarafından tarayıcınıza
+          kaydedilen küçük metin dosyalarıdır. Tercihlerinizi hatırlamamıza ve
+          size daha iyi bir deneyim sunmamıza yardımcı olur.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">
+          Kullandığımız Depolama Türleri
+        </h2>
+        <ul class="mt-2 list-disc space-y-1.5 pl-5">
+          <li>
+            <strong class="text-text-primary">Zorunlu depolama:</strong> Tema tercihiniz
+            (aydınlık/karanlık mod) gibi temel işlevler için kullanılır.
+          </li>
+          <li>
+            <strong class="text-text-primary">İşlevsel depolama:</strong> Favori sayfalarınız
+            gibi kişiselleştirme özellikleri için kullanılır.
+          </li>
+          <li>
+            <strong class="text-text-primary"
+              >Analitik ve reklam çerezleri:</strong
+            > Site performansını ölçmek ve olası reklam gösterimlerini yönetmek için
+            üçüncü taraf sağlayıcılar tarafından kullanılabilir.
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">
+          Çerezleri Nasıl Yönetebilirsiniz?
+        </h2>
+        <p class="mt-2">
+          Çoğu tarayıcı, çerezleri kabul etme, reddetme veya silme seçeneği
+          sunar. Tarayıcı ayarlarınızdan çerez tercihlerinizi yönetebilirsiniz;
+          ancak bazı çerezleri devre dışı bırakmanız site işlevselliğini
+          etkileyebilir.
+        </p>
+      </section>
+    </div>
+  </PageContainer>
+</BaseLayout>

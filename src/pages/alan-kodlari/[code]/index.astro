@@ -1,0 +1,273 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import LargeCodeHero from "@/components/code-pages/LargeCodeHero.astro";
+import CodeSummaryCard from "@/components/code-pages/CodeSummaryCard.astro";
+import LocationMapCard from "@/components/geography/LocationMapCard.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import RelatedSearches from "@/components/content/RelatedSearches.astro";
+import SourcesCard from "@/components/content/SourcesCard.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import Icon from "@/components/Icon.astro";
+import { areaCodes } from "@/data/areaCodes";
+import { getProvinceBySlug } from "@/data/provinces";
+import { getRegion } from "@/data/regions";
+import { getDistrictsForProvince } from "@/data/districts";
+import { formatNumber, formatArea, formatElevation } from "@/utils/format";
+import { faqPageSchema, webPageSchema } from "@/utils/seo";
+import StructuredData from "@/components/seo/StructuredData.astro";
+
+export function getStaticPaths() {
+  return areaCodes.map((ac) => ({
+    params: { code: ac.code },
+    props: { areaCode: ac },
+  }));
+}
+
+const { areaCode } = Astro.props as { areaCode: (typeof areaCodes)[number] };
+const province = getProvinceBySlug(areaCode.provinceSlug)!;
+const region = getRegion(province.region);
+const districts = getDistrictsForProvince(province.slug);
+const path = `/alan-kodlari/${areaCode.code}/`;
+const locationLabel = areaCode.label ?? province.name;
+const answer = `${areaCode.code}, ${province.name} ilinin sabit telefon alan kodudur.`;
+
+const otherProvinceAreaCodes = areaCodes
+  .filter(
+    (ac) => ac.provinceSlug !== province.slug && ac.code !== areaCode.code,
+  )
+  .slice(0, 6);
+
+const faqs = [
+  { question: `${areaCode.code} nerenin alan kodu?`, answer },
+  { question: `${areaCode.code} hangi şehrin alan kodudur?`, answer },
+  {
+    question: `Türkiye içinden ${areaCode.code} nasıl aranır?`,
+    answer: `Türkiye içinden 0${areaCode.code} biçiminde, yurt dışından ise +90 ${areaCode.code} biçiminde aranır.`,
+  },
+  {
+    question: `${province.name} hangi bölgededir?`,
+    answer: `${province.name}, ${region?.name ?? ""} yer alır.`,
+  },
+];
+
+const relatedSearches = [
+  {
+    label: `${province.plateCode} nerenin plakası?`,
+    href: `/plaka-kodlari/${province.plateCode}/`,
+  },
+  { label: `${province.name} ili`, href: `/iller/${province.slug}/` },
+  ...(districts.length > 0
+    ? [
+        {
+          label: `${province.name} ilçeleri`,
+          href: `/iller/${province.slug}/ilceler/`,
+        },
+      ]
+    : []),
+  ...otherProvinceAreaCodes
+    .slice(0, 3)
+    .map((ac) => ({
+      label: `${ac.code} nerenin alan kodu?`,
+      href: `/alan-kodlari/${ac.code}/`,
+    })),
+  { label: "Tüm alan kodları", href: "/alan-kodlari/" },
+];
+---
+
+<BaseLayout
+  title={`${areaCode.code} Nerenin Alan Kodu? — ${province.name}`}
+  description={`${answer} Türkiye içinden ve yurt dışından nasıl aranır, ${province.name} hakkında bilgiler.`}
+  path={path}
+>
+  <StructuredData
+    schema={[
+      webPageSchema({
+        name: `${areaCode.code} Nerenin Alan Kodu?`,
+        path,
+        description: answer,
+      }),
+      faqPageSchema(faqs),
+    ]}
+  />
+
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Alan Kodları", href: "/alan-kodlari/" },
+        { label: areaCode.code, href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-12">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+      <div class="flex flex-col gap-10">
+        <section aria-labelledby="quick-answer">
+          <h1
+            id="quick-answer"
+            class="text-3xl font-extrabold text-text-primary sm:text-4xl"
+          >
+            {areaCode.code} Nerenin Alan Kodu?
+          </h1>
+          <div
+            class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
+          >
+            <p class="text-base font-semibold text-text-primary sm:text-lg">
+              <strong>{answer}</strong>
+            </p>
+          </div>
+        </section>
+
+        <section
+          class="flex flex-col items-start gap-6 sm:flex-row sm:items-center"
+        >
+          <LargeCodeHero
+            code={areaCode.code}
+            label={locationLabel}
+            prefix="Alan Kodu"
+          />
+          <div>
+            <p class="text-2xl font-extrabold text-text-primary">
+              {province.name}
+            </p>
+            <p class="text-sm text-text-secondary">{region?.name}</p>
+            <a href={`/iller/${province.slug}/`} class="btn btn-primary mt-3">
+              {province.name} İl Sayfasına Git
+            </a>
+          </div>
+        </section>
+
+        <section
+          class="card flex flex-col gap-3 p-5"
+          aria-labelledby="nasil-aranir-heading"
+        >
+          <h2
+            id="nasil-aranir-heading"
+            class="flex items-center gap-2 text-lg font-extrabold text-text-primary"
+          >
+            <Icon name="phone-call" size={18} class="text-brand-primary" />
+            Nasıl Aranır?
+          </h2>
+          <p class="prose-content">
+            Türkiye içinden <strong class="text-text-primary"
+              >0{areaCode.code}</strong
+            > biçiminde, yurt dışından ise{" "}
+            <strong class="text-text-primary">+90 {areaCode.code}</strong> biçiminde
+            aranır. Sabit hat numarası aramadan önce alan kodunun başına 0 eklemeyi
+            unutmayın.
+          </p>
+        </section>
+
+        {
+          province.overview && (
+            <section aria-labelledby="il-hakkinda-heading">
+              <h2
+                id="il-hakkinda-heading"
+                class="text-xl font-extrabold text-text-primary"
+              >
+                {province.name} Hakkında
+              </h2>
+              <p class="prose-content mt-3">{province.overview}</p>
+            </section>
+          )
+        }
+
+        {
+          districts.length > 0 && (
+            <section aria-labelledby="ilceler-heading">
+              <h2
+                id="ilceler-heading"
+                class="text-xl font-extrabold text-text-primary"
+              >
+                {province.name} İlçeleri
+              </h2>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {districts.map((d) => (
+                  <a href={`/iller/${province.slug}/${d.slug}/`} class="pill">
+                    {d.name}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )
+        }
+
+        {
+          otherProvinceAreaCodes.length > 0 && (
+            <section aria-labelledby="benzer-kodlar-heading">
+              <h2
+                id="benzer-kodlar-heading"
+                class="text-xl font-extrabold text-text-primary"
+              >
+                Diğer Alan Kodları
+              </h2>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {otherProvinceAreaCodes.map((ac) => {
+                  const p = getProvinceBySlug(ac.provinceSlug);
+                  return (
+                    <a href={`/alan-kodlari/${ac.code}/`} class="pill">
+                      {ac.code}{" "}
+                      <span class="ml-1 text-text-muted">({p?.name})</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+          )
+        }
+
+        <AdSlot variant="in-article" />
+
+        <FAQAccordion faqs={faqs} />
+        <RelatedSearches items={relatedSearches} />
+      </div>
+
+      <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
+        <CodeSummaryCard
+          ctaHref={`/iller/${province.slug}/`}
+          ctaLabel="İl Sayfasını Gör"
+          facts={[
+            { icon: "compass", label: "Bölge", value: region?.name ?? "—" },
+            { icon: "car", label: "Plaka Kodu", value: province.plateCode },
+            {
+              icon: "map",
+              label: "İlçe Sayısı",
+              value: province.districtCount
+                ? `${province.districtCount} ilçe`
+                : "—",
+            },
+            {
+              icon: "users",
+              label: "Nüfus",
+              value: province.population
+                ? formatNumber(province.population)
+                : "—",
+            },
+            {
+              icon: "ruler",
+              label: "Yüzölçümü",
+              value: formatArea(province.areaKm2),
+            },
+            {
+              icon: "mountain",
+              label: "Rakım",
+              value: formatElevation(province.elevationM),
+            },
+          ]}
+        />
+        <LocationMapCard
+          regionSlug={province.region}
+          placeName={province.name}
+          coordinates={province.coordinates}
+        />
+        <AdSlot variant="sidebar" />
+        <SourcesCard
+          sources={province.sources}
+          lastReviewed={province.lastReviewed}
+        />
+      </aside>
+    </div>
+  </PageContainer>
+</BaseLayout>

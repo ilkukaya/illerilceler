@@ -1,0 +1,256 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import TurkeyMap from "@/components/geography/TurkeyMap.astro";
+import RegionLegend from "@/components/geography/RegionLegend.astro";
+import StatCard from "@/components/cards/StatCard.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import Icon from "@/components/Icon.astro";
+import { regions } from "@/data/regions";
+import { provinces } from "@/data/provinces";
+import { siteConfig } from "@/config/site";
+
+const path = "/haritalar/turkiye-haritasi/";
+
+const summaryCards = [
+  {
+    icon: "building-2",
+    label: "İl",
+    value: siteConfig.stats.provinces,
+    color: "blue" as const,
+  },
+  {
+    icon: "map",
+    label: "İlçe",
+    value: siteConfig.stats.districts,
+    color: "purple" as const,
+  },
+  {
+    icon: "users",
+    label: "Mahalle",
+    value: siteConfig.stats.neighborhoods,
+    color: "green" as const,
+  },
+  {
+    icon: "home",
+    label: "Köy",
+    value: siteConfig.stats.villages,
+    color: "pink" as const,
+  },
+];
+
+const faqs = [
+  {
+    question: "Türkiye kaç coğrafi bölgeye ayrılır?",
+    answer:
+      "Türkiye; Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu ve Güneydoğu Anadolu olmak üzere 7 coğrafi bölgeye ayrılır.",
+  },
+  {
+    question: "En çok ili olan bölge hangisidir?",
+    answer:
+      "18 il ile Karadeniz Bölgesi, Türkiye'nin en çok ile sahip bölgesidir.",
+  },
+  {
+    question: "En büyük yüzölçümüne sahip bölge hangisidir?",
+    answer:
+      "Yüzölçümü bakımından İç Anadolu Bölgesi Türkiye'nin en geniş bölgelerinden biridir.",
+  },
+];
+---
+
+<BaseLayout
+  title="Türkiye Haritası — Bölgeler ve İllere Göre İnteraktif Harita"
+  description="Türkiye'nin 7 coğrafi bölgesini ve 81 ilini gösteren interaktif harita. Bölgeye tıklayarak illeri keşfedin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Haritalar", href: "/haritalar/" },
+        { label: "Türkiye Haritası", href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+      <div>
+        <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+          Türkiye Haritası
+        </h1>
+        <p class="prose-content mt-3 max-w-2xl">
+          Aşağıdaki şematik harita üzerinde bir bölgeye tıklayarak o bölgedeki
+          illeri görüntüleyebilirsiniz.
+        </p>
+
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div
+            class="flex items-center rounded-xl border border-border p-1"
+            role="group"
+            aria-label="Harita görünümü"
+          >
+            <button
+              type="button"
+              id="tab-bolgeler"
+              class="map-tab-btn rounded-lg px-4 py-2 text-sm font-semibold"
+              aria-pressed="true"
+            >
+              Bölgeler
+            </button>
+            <button
+              type="button"
+              id="tab-iller"
+              class="map-tab-btn rounded-lg px-4 py-2 text-sm font-semibold"
+              aria-pressed="false"
+            >
+              İller
+            </button>
+          </div>
+          <div
+            class="flex items-center gap-1.5"
+            role="group"
+            aria-label="Yakınlaştırma"
+          >
+            <button
+              type="button"
+              id="zoom-out"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary hover:bg-surface-muted"
+              aria-label="Uzaklaştır"
+            >
+              <Icon name="minus" size={16} />
+            </button>
+            <button
+              type="button"
+              id="zoom-in"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary hover:bg-surface-muted"
+              aria-label="Yakınlaştır"
+            >
+              <Icon name="plus" size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div id="panel-bolgeler" class="card mt-5 p-5">
+          <div id="map-zoom-wrap" style="transition: transform 0.15s ease;">
+            <TurkeyMap />
+          </div>
+          <RegionLegend class="mt-5" />
+        </div>
+
+        <div id="panel-iller" class="mt-5 hidden">
+          {
+            regions.map((region) => (
+              <div class="card mb-4 p-5">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="h-3 w-3 rounded-full"
+                    style={`background-color:${region.color}`}
+                  />
+                  <h2 class="text-base font-extrabold text-text-primary">
+                    {region.name}
+                  </h2>
+                  <span class="text-xs text-text-muted">
+                    ({provinces.filter((p) => p.region === region.slug).length}{" "}
+                    il)
+                  </span>
+                </div>
+                <p class="prose-content mt-2 text-sm">
+                  {region.shortDescription}
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  {provinces
+                    .filter((p) => p.region === region.slug)
+                    .map((p) => (
+                      <a href={`/iller/${p.slug}/`} class="pill">
+                        {p.name}{" "}
+                        <span class="ml-1 text-text-muted">
+                          ({p.plateCode})
+                        </span>
+                      </a>
+                    ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <section class="prose-content mt-8" aria-labelledby="egitim-heading">
+          <h2
+            id="egitim-heading"
+            class="text-xl font-extrabold text-text-primary"
+          >
+            Türkiye'nin Coğrafi Bölgeleri Hakkında
+          </h2>
+          <p class="mt-3">
+            Türkiye, 1941 yılında toplanan I. Coğrafya Kongresi'nde iklim, tarım
+            ürünleri, yeryüzü şekilleri ve ulaşım gibi ölçütler gözetilerek 7
+            coğrafi bölgeye ayrılmıştır: Marmara, Ege, Akdeniz, İç Anadolu,
+            Karadeniz, Doğu Anadolu ve Güneydoğu Anadolu. Bu bölgeler resmi
+            idari birimler değildir; coğrafi ve eğitim amaçlı bir
+            sınıflandırmadır.
+          </p>
+        </section>
+
+        <div class="mt-10">
+          <FAQAccordion faqs={faqs} />
+        </div>
+      </div>
+
+      <aside class="flex flex-col gap-4 lg:sticky lg:top-32 lg:self-start">
+        <h2 class="text-sm font-bold text-text-primary">Harita Bilgileri</h2>
+        <div class="grid grid-cols-2 gap-3">
+          {summaryCards.map((s) => <StatCard {...s} compact />)}
+        </div>
+        <p class="text-xs leading-relaxed text-text-muted">
+          Haritadaki her bir bölgeye tıklayarak o bölgeye ait illeri
+          görüntüleyebilirsiniz.
+        </p>
+      </aside>
+    </div>
+  </PageContainer>
+</BaseLayout>
+
+<script>
+  const tabBolgeler = document.getElementById("tab-bolgeler");
+  const tabIller = document.getElementById("tab-iller");
+  const panelBolgeler = document.getElementById("panel-bolgeler");
+  const panelIller = document.getElementById("panel-iller");
+
+  tabBolgeler?.addEventListener("click", () => {
+    panelBolgeler?.classList.remove("hidden");
+    panelIller?.classList.add("hidden");
+    tabBolgeler.setAttribute("aria-pressed", "true");
+    tabIller?.setAttribute("aria-pressed", "false");
+  });
+  tabIller?.addEventListener("click", () => {
+    panelIller?.classList.remove("hidden");
+    panelBolgeler?.classList.add("hidden");
+    tabIller.setAttribute("aria-pressed", "true");
+    tabBolgeler?.setAttribute("aria-pressed", "false");
+  });
+
+  let zoom = 1;
+  const zoomWrap = document.getElementById("map-zoom-wrap");
+  function applyZoom() {
+    if (zoomWrap) zoomWrap.style.transform = `scale(${zoom})`;
+  }
+  document.getElementById("zoom-in")?.addEventListener("click", () => {
+    zoom = Math.min(1.4, zoom + 0.1);
+    applyZoom();
+  });
+  document.getElementById("zoom-out")?.addEventListener("click", () => {
+    zoom = Math.max(0.7, zoom - 0.1);
+    applyZoom();
+  });
+</script>
+
+<style>
+  .map-tab-btn[aria-pressed="true"] {
+    background-color: var(--brand-primary);
+    color: white;
+  }
+  .map-tab-btn[aria-pressed="false"] {
+    color: var(--color-text-secondary);
+  }
+</style>

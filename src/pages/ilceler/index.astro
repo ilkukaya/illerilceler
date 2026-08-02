@@ -1,0 +1,115 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces, getProvinceBySlug } from "@/data/provinces";
+import { districtNamesByProvince } from "@/data/districts";
+import { totalDistrictCount } from "@/data/provinces";
+
+const path = "/ilceler/";
+const sorted = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+const detailedProvinces = Object.keys(districtNamesByProvince)
+  .map((slug) => getProvinceBySlug(slug))
+  .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+const faqs = [
+  {
+    question: "Türkiye'de kaç ilçe vardır?",
+    answer: `Türkiye'de 81 ile bağlı toplam ${totalDistrictCount} ilçe bulunmaktadır.`,
+  },
+  {
+    question: "En çok ilçesi olan il hangisidir?",
+    answer: "İstanbul 39 ilçe ile Türkiye'nin en çok ilçeye sahip ilidir.",
+  },
+  {
+    question: "Bir ilçenin bağlı olduğu ili nasıl bulabilirim?",
+    answer:
+      "Arama kutusuna ilçe adını yazarak veya ilin sayfasındaki ilçeler listesinden bulabilirsiniz.",
+  },
+];
+---
+
+<BaseLayout
+  title="Türkiye'nin İlçeleri — İllere Göre İlçe Listesi"
+  description={`Türkiye'deki ${totalDistrictCount} ilçeyi illere göre keşfedin. Her ilin ilçe listesine, nüfus ve mahalle bilgilerine ulaşın.`}
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "İlçeler", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Türkiye'nin İlçeleri
+    </h1>
+    <div
+      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
+    >
+      <p class="text-base font-semibold text-text-primary">
+        <strong
+          >Türkiye'de 81 ile bağlı toplam {totalDistrictCount} ilçe bulunur.</strong
+        > İlçeleri görüntülemek için aşağıdan bir il seçin.
+      </p>
+    </div>
+
+    <section class="mt-10" aria-labelledby="detayli-heading">
+      <SectionHeader
+        as="h2"
+        id="detayli-heading"
+        eyebrow="Detaylı Veri"
+        title="Ayrıntılı İlçe Listesi Bulunan İller"
+        description="Bu iller için tüm ilçelerin nüfus, mahalle sayısı ve daha fazla bilgiye ulaşabilirsiniz."
+      />
+      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {
+          detailedProvinces.map((p) => (
+            <a
+              href={`/iller/${p.slug}/ilceler/`}
+              class="card card-hover flex items-center justify-between gap-2 p-4"
+            >
+              <span>
+                <span class="block text-sm font-bold text-text-primary">
+                  {p.name}
+                </span>
+                <span class="block text-xs text-text-muted">
+                  {p.districtCount} ilçe
+                </span>
+              </span>
+              <Icon name="arrow-right" size={16} class="text-text-muted" />
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="mt-10" aria-labelledby="tum-iller-heading">
+      <SectionHeader
+        as="h2"
+        id="tum-iller-heading"
+        title="Tüm İllere Göre Gözat"
+        description="Bir ile ait ilçeleri görmek için ili seçin."
+      />
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          sorted.map((p) => (
+            <a href={`/iller/${p.slug}/`} class="pill">
+              {p.name}{" "}
+              <span class="ml-1 text-text-muted">
+                ({p.districtCount ?? "—"})
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <div class="mt-12">
+      <FAQAccordion faqs={faqs} />
+    </div>
+  </PageContainer>
+</BaseLayout>

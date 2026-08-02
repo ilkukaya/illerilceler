@@ -1,0 +1,12 @@
+{
+  "name": "illerilceler.com — Türkiye Bilgi Merkezi",
+  "short_name": "İllerİlçeler",
+  "description": "Türkiye'nin illeri, ilçeleri, mahalleleri, plaka ve alan kodları hakkında bilgi merkezi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F8FC",
+  "theme_color": "#635BFF",
+  "icons": [
+    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

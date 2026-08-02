@@ -1,0 +1,70 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import { siteConfig } from "@/config/site";
+
+const path = "/kullanim-kosullari/";
+---
+
+<BaseLayout
+  title="Kullanım Koşulları"
+  description="illerilceler.com kullanım koşulları."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Kullanım Koşulları", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="max-w-3xl pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary">
+      Kullanım Koşulları
+    </h1>
+    <p class="mt-2 text-sm text-text-muted">Son güncelleme: Ocak 2026</p>
+
+    <div class="prose-content mt-8 flex flex-col gap-6">
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">1. Kabul</h2>
+        <p class="mt-2">
+          {siteConfig.name} adresini ziyaret ederek ve kullanarak bu Kullanım Koşulları'nı
+          kabul etmiş sayılırsınız.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">2. İçeriğin Amacı</h2>
+        <p class="mt-2">
+          Platform'daki il, ilçe, mahalle, plaka kodu, alan kodu, posta kodu ve
+          coğrafi bilgiler genel bilgilendirme amacıyla sunulmaktadır.
+          İçeriklerin bir kısmı örnek/demo verilerden oluşabilir ve resmi
+          işlemler için yeterli kaynak teşkil etmez. Güncel ve resmî bilgi için
+          ilgili kamu kurumlarına başvurulmalıdır.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">3. Fikri Mülkiyet</h2>
+        <p class="mt-2">
+          Platform'un tasarımı, logosu ve özgün içerikleri {siteConfig.name}'a
+          aittir. İçeriklerin izinsiz kopyalanması, çoğaltılması veya ticari
+          amaçla kullanılması yasaktır.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">
+          4. Sorumluluğun Sınırlandırılması
+        </h2>
+        <p class="mt-2">
+          Platform'daki bilgilerin doğruluğu için makul özen gösterilmekle
+          birlikte, içeriklerden kaynaklanabilecek doğrudan veya dolaylı
+          zararlardan {siteConfig.name} sorumlu tutulamaz.
+        </p>
+      </section>
+      <section>
+        <h2 class="text-lg font-bold text-text-primary">5. Değişiklikler</h2>
+        <p class="mt-2">
+          Bu koşullar zaman zaman güncellenebilir. Güncel sürüm her zaman bu
+          sayfada yayımlanır.
+        </p>
+      </section>
+    </div>
+  </PageContainer>
+</BaseLayout>

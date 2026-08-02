@@ -1,0 +1,246 @@
+---
+import Icon from "@/components/Icon.astro";
+import type { QuizDefinition } from "@/types";
+
+interface Props {
+  quiz: QuizDefinition;
+}
+
+const { quiz } = Astro.props;
+---
+
+<div
+  id="quiz-root"
+  class="card mx-auto max-w-2xl p-6 sm:p-8"
+  data-quiz={JSON.stringify(quiz)}
+>
+  <!-- Start screen -->
+  <div
+    id="quiz-start"
+    class="flex flex-col items-center gap-4 py-6 text-center"
+  >
+    <span
+      class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-purple-soft text-brand-primary"
+    >
+      <Icon name="puzzle" size={26} />
+    </span>
+    <h2 class="text-2xl font-extrabold text-text-primary">{quiz.title}</h2>
+    <p class="max-w-md text-sm text-text-secondary">{quiz.description}</p>
+    <p class="text-xs text-text-muted">
+      {quiz.questions.length} soru · yaklaşık {quiz.durationMinutes ?? 3} dakika
+    </p>
+    <button type="button" id="quiz-start-btn" class="btn btn-primary mt-2">
+      Quiz'e Başla
+      <Icon name="arrow-right" size={16} />
+    </button>
+  </div>
+
+  <!-- Question screen -->
+  <div id="quiz-question" class="hidden">
+    <div
+      class="flex items-center justify-between text-xs font-semibold text-text-muted"
+    >
+      <span id="quiz-progress-label">Soru 1/8</span>
+      <span id="quiz-score-label">Doğru: 0</span>
+    </div>
+    <div
+      class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+    >
+      <div
+        id="quiz-progress-bar"
+        class="h-full rounded-full bg-brand-primary transition-all"
+        style="width: 0%"
+      >
+      </div>
+    </div>
+
+    <h3
+      id="quiz-question-text"
+      class="mt-6 text-lg font-bold text-text-primary sm:text-xl"
+    >
+    </h3>
+    <div
+      id="quiz-options"
+      class="mt-5 flex flex-col gap-2.5"
+      role="radiogroup"
+      aria-labelledby="quiz-question-text"
+    >
+    </div>
+
+    <p
+      id="quiz-explanation"
+      class="mt-4 hidden rounded-xl bg-surface-muted p-3.5 text-sm text-text-secondary"
+      aria-live="polite"
+    >
+    </p>
+
+    <div class="mt-6 flex justify-end">
+      <button type="button" id="quiz-next-btn" class="btn btn-primary" disabled>
+        Sonraki Soru
+        <Icon name="arrow-right" size={16} />
+      </button>
+    </div>
+  </div>
+
+  <!-- Result screen -->
+  <div
+    id="quiz-result"
+    class="hidden flex-col items-center gap-4 py-6 text-center"
+  >
+    <span
+      id="quiz-result-icon"
+      class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-green-soft text-brand-green"
+    >
+      <Icon name="trophy" size={30} />
+    </span>
+    <h2 class="text-2xl font-extrabold text-text-primary">Tamamlandı!</h2>
+    <p class="text-lg font-bold text-brand-primary" id="quiz-final-score"></p>
+    <p class="max-w-sm text-sm text-text-secondary" id="quiz-result-message">
+    </p>
+    <button type="button" id="quiz-retry-btn" class="btn btn-secondary mt-2">
+      <Icon name="rotate-ccw" size={15} />
+      Tekrar Dene
+    </button>
+  </div>
+</div>
+
+<script>
+  interface QuizQuestion {
+    id: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation?: string;
+  }
+  interface QuizData {
+    title: string;
+    questions: QuizQuestion[];
+  }
+
+  const root = document.getElementById("quiz-root");
+  if (root) {
+    const quiz: QuizData = JSON.parse(root.dataset.quiz ?? "{}");
+    const startScreen = document.getElementById("quiz-start");
+    const questionScreen = document.getElementById("quiz-question");
+    const resultScreen = document.getElementById("quiz-result");
+    const startBtn = document.getElementById("quiz-start-btn");
+    const nextBtn = document.getElementById(
+      "quiz-next-btn",
+    ) as HTMLButtonElement | null;
+    const retryBtn = document.getElementById("quiz-retry-btn");
+    const optionsEl = document.getElementById("quiz-options");
+    const questionTextEl = document.getElementById("quiz-question-text");
+    const explanationEl = document.getElementById("quiz-explanation");
+    const progressLabel = document.getElementById("quiz-progress-label");
+    const scoreLabel = document.getElementById("quiz-score-label");
+    const progressBar = document.getElementById("quiz-progress-bar");
+    const finalScoreEl = document.getElementById("quiz-final-score");
+    const resultMessageEl = document.getElementById("quiz-result-message");
+
+    let currentIndex = 0;
+    let score = 0;
+    let answered = false;
+
+    function renderQuestion() {
+      const q = quiz.questions[currentIndex];
+      if (!q || !optionsEl || !questionTextEl) return;
+      answered = false;
+      questionTextEl.textContent = q.question;
+      if (progressLabel)
+        progressLabel.textContent = `Soru ${currentIndex + 1}/${quiz.questions.length}`;
+      if (scoreLabel) scoreLabel.textContent = `Doğru: ${score}`;
+      if (progressBar)
+        progressBar.style.width = `${(currentIndex / quiz.questions.length) * 100}%`;
+      explanationEl?.classList.add("hidden");
+      if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.textContent =
+          currentIndex === quiz.questions.length - 1
+            ? "Sonucu Gör"
+            : "Sonraki Soru";
+      }
+
+      optionsEl.innerHTML = "";
+      q.options.forEach((option, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className =
+          "quiz-option flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm font-medium text-text-primary transition-colors hover:border-brand-primary min-h-11";
+        btn.setAttribute("role", "radio");
+        btn.setAttribute("aria-checked", "false");
+        btn.innerHTML = `<span class="quiz-option-index inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold">${String.fromCharCode(65 + i)}</span><span>${option}</span>`;
+        btn.addEventListener("click", () => selectOption(i));
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function selectOption(index: number) {
+      if (answered) return;
+      answered = true;
+      const q = quiz.questions[currentIndex];
+      const correct = index === q.correctIndex;
+      if (correct) score++;
+
+      optionsEl
+        ?.querySelectorAll<HTMLButtonElement>(".quiz-option")
+        .forEach((el, i) => {
+          el.setAttribute("aria-checked", String(i === index));
+          if (i === q.correctIndex) {
+            el.classList.add("border-brand-green", "bg-brand-green-soft");
+          } else if (i === index) {
+            el.classList.add("border-brand-red", "bg-brand-pink-soft");
+          }
+        });
+
+      if (explanationEl && q.explanation) {
+        explanationEl.textContent =
+          (correct ? "Doğru! " : "Yanlış. ") + q.explanation;
+        explanationEl.classList.remove("hidden");
+      }
+      if (scoreLabel) scoreLabel.textContent = `Doğru: ${score}`;
+      if (nextBtn) nextBtn.disabled = false;
+    }
+
+    function showResult() {
+      questionScreen?.classList.add("hidden");
+      resultScreen?.classList.remove("hidden");
+      resultScreen?.classList.add("flex");
+      const total = quiz.questions.length;
+      if (finalScoreEl) finalScoreEl.textContent = `${score} / ${total} Doğru`;
+      if (resultMessageEl) {
+        const ratio = score / total;
+        resultMessageEl.textContent =
+          ratio === 1
+            ? "Mükemmel! Tüm soruları doğru bildin."
+            : ratio >= 0.6
+              ? "Harika gidiyorsun, biraz daha pratikle mükemmel olacak!"
+              : "İyi bir başlangıç! Tekrar deneyerek bilgini pekiştirebilirsin.";
+      }
+    }
+
+    startBtn?.addEventListener("click", () => {
+      startScreen?.classList.add("hidden");
+      questionScreen?.classList.remove("hidden");
+      renderQuestion();
+    });
+
+    nextBtn?.addEventListener("click", () => {
+      if (currentIndex < quiz.questions.length - 1) {
+        currentIndex++;
+        renderQuestion();
+      } else {
+        if (progressBar) progressBar.style.width = "100%";
+        showResult();
+      }
+    });
+
+    retryBtn?.addEventListener("click", () => {
+      currentIndex = 0;
+      score = 0;
+      resultScreen?.classList.add("hidden");
+      resultScreen?.classList.remove("flex");
+      questionScreen?.classList.remove("hidden");
+      renderQuestion();
+    });
+  }
+</script>

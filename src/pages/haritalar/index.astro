@@ -1,0 +1,45 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import TurkeyMap from "@/components/geography/TurkeyMap.astro";
+import Icon from "@/components/Icon.astro";
+
+const path = "/haritalar/";
+---
+
+<BaseLayout
+  title="Haritalar — Türkiye Haritaları"
+  description="Türkiye'nin bölge haritasını ve il bazlı görselleştirmeleri keşfedin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Haritalar", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Haritalar
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Türkiye'nin coğrafi yapısını haritalar üzerinden keşfedin.
+    </p>
+
+    <div class="mt-8 max-w-2xl">
+      <a href="/haritalar/turkiye-haritasi/" class="card card-hover block p-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-extrabold text-text-primary">
+            Türkiye Haritası
+          </h2>
+          <Icon name="arrow-right" size={18} class="text-text-muted" />
+        </div>
+        <p class="prose-content mt-1.5 text-sm">
+          7 coğrafi bölge ve 81 ile göre interaktif harita.
+        </p>
+        <div class="mt-4">
+          <TurkeyMap compact />
+        </div>
+      </a>
+    </div>
+  </PageContainer>
+</BaseLayout>

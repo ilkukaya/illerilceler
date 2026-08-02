@@ -1,0 +1,165 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import EducationHero from "@/components/education/EducationHero.astro";
+import GradeCard from "@/components/education/GradeCard.astro";
+import QuizCard from "@/components/education/QuizCard.astro";
+import FactCard from "@/components/cards/FactCard.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import Icon from "@/components/Icon.astro";
+import {
+  gradeLevels,
+  educationTopics,
+  educationActivities,
+  quizzes,
+} from "@/data/education";
+import { dailyFacts } from "@/data/geography";
+
+const path = "/egitim/";
+const fact = dailyFacts[Math.floor(dailyFacts.length / 2)];
+---
+
+<BaseLayout
+  title="Eğitim Köşesi — Öğrenciler için Türkiye Coğrafyası"
+  description="İlkokul, ortaokul ve lise öğrencileri için Türkiye coğrafyası konu anlatımları, testler ve eğlenceli etkinlikler."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "Eğitim", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <EducationHero />
+
+    <section class="mt-12" aria-labelledby="seviye-heading">
+      <SectionHeader
+        as="h2"
+        id="seviye-heading"
+        title="Seviyeni Seç"
+        description="Sınıf seviyene uygun içeriklere göz at."
+      />
+      <div class="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {
+          gradeLevels.map((g) => (
+            <GradeCard
+              icon={g.icon}
+              name={g.name}
+              description={g.description}
+              color={g.color}
+              href={g.slug === "test-quiz" ? "/egitim/quiz/" : "/egitim/"}
+            />
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="mt-12" aria-labelledby="konular-heading">
+      <SectionHeader as="h2" id="konular-heading" title="Popüler Konular" />
+      <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {
+          educationTopics.map((t) => (
+            <a
+              href={t.href}
+              class="card card-hover flex flex-col items-center gap-2 p-4 text-center"
+            >
+              <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-purple-soft text-brand-primary">
+                <Icon name={t.icon} size={20} />
+              </span>
+              <span class="text-xs font-semibold text-text-primary">
+                {t.title}
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <AdSlot variant="leaderboard" class="mt-12" />
+
+    <section class="mt-12" aria-labelledby="test-heading">
+      <SectionHeader
+        as="h2"
+        id="test-heading"
+        title="Test & Quiz"
+        description="Bilgini test et, puanını gör."
+      />
+      <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          quizzes.map((q) => (
+            <QuizCard
+              title={q.title}
+              description={q.description}
+              href={`/egitim/quiz/`}
+              meta={`${q.questions.length} soru`}
+              icon="puzzle"
+            />
+          ))
+        }
+        <QuizCard
+          title="81 İl ve Plakaları"
+          description="İlleri ve plaka kodlarını öğren, kendini sına."
+          href="/egitim/81-il-ve-plakalari/"
+          meta="Çalışma Kağıdı"
+          icon="car"
+        />
+      </div>
+    </section>
+
+    <section class="mt-12" aria-labelledby="etkinlik-heading">
+      <SectionHeader
+        as="h2"
+        id="etkinlik-heading"
+        title="Eğlenceli Aktiviteler"
+      />
+      <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {
+          educationActivities.map((a) => (
+            <a
+              href={a.href}
+              class="card card-hover flex flex-col items-center gap-2 p-4 text-center"
+            >
+              <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-orange-soft text-brand-orange">
+                <Icon name={a.icon} size={20} />
+              </span>
+              <span class="text-xs font-semibold text-text-primary">
+                {a.title}
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <section
+      class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]"
+      aria-labelledby="gunun-bilgisi-egitim-heading"
+    >
+      <div>
+        <h2
+          id="gunun-bilgisi-egitim-heading"
+          class="text-xl font-extrabold text-text-primary sm:text-2xl"
+        >
+          Bugünün Bilgisi
+        </h2>
+        <p class="prose-content mt-2">
+          Her gün Türkiye coğrafyasından ilginç bir bilgi öğren.
+        </p>
+        <div class="mt-4 max-w-md">
+          <FactCard fact={fact} />
+        </div>
+      </div>
+      <div class="card flex flex-col justify-center gap-3 p-6">
+        <Icon name="printer" size={24} class="text-brand-primary" />
+        <h3 class="text-base font-extrabold text-text-primary">
+          Çalışma Kağıtları
+        </h3>
+        <p class="text-sm text-text-secondary">
+          Yazdırılabilir çalışma kağıtları yakında burada olacak.
+        </p>
+        <span class="chip w-fit">Yakında</span>
+      </div>
+    </section>
+  </PageContainer>
+</BaseLayout>

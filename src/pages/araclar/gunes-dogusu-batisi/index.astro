@@ -1,0 +1,169 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { provinces } from "@/data/provinces";
+
+const path = "/araclar/gunes-dogusu-batisi/";
+const citiesWithCoords = provinces
+  .filter((p) => p.coordinates)
+  .sort((a, b) => a.name.localeCompare(b.name, "tr"))
+  .map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    lat: p.coordinates!.lat,
+    lng: p.coordinates!.lng,
+  }));
+---
+
+<BaseLayout
+  title="Güneş Doğuşu ve Batışı Saatleri"
+  description="Seçtiğiniz il ve tarihe göre tahmini güneş doğuşu ve batışı saatlerini hesaplayın."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs
+      items={[
+        { label: "Araçlar", href: "/araclar/" },
+        { label: "Güneş Doğuşu ve Batışı", href: path },
+      ]}
+    />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      Güneş Doğuşu ve Batışı
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Bir il ve tarih seçerek o gün için tahmini güneş doğuş ve batış saatlerini
+      görüntüleyin.
+    </p>
+
+    <div
+      class="card mt-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:p-6"
+    >
+      <div class="flex-1">
+        <label
+          for="sun-city-select"
+          class="mb-1.5 block text-xs font-semibold text-text-muted">İl</label
+        >
+        <select
+          id="sun-city-select"
+          class="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
+        >
+          {
+            citiesWithCoords.map((c) => (
+              <option value={c.slug}>{c.name}</option>
+            ))
+          }
+        </select>
+      </div>
+      <div class="flex-1">
+        <label
+          for="sun-date-input"
+          class="mb-1.5 block text-xs font-semibold text-text-muted"
+          >Tarih</label
+        >
+        <input
+          id="sun-date-input"
+          type="date"
+          class="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
+        />
+      </div>
+      <button type="button" id="sun-calculate-btn" class="btn btn-primary h-12">
+        Hesapla
+        <Icon name="arrow-right" size={16} />
+      </button>
+    </div>
+
+    <div id="sun-result" class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="card flex flex-col items-center gap-2 p-6 text-center">
+        <Icon name="sunrise" size={28} class="text-brand-orange" />
+        <p class="text-xs font-semibold text-text-muted">Güneş Doğuşu</p>
+        <p id="sun-sunrise" class="text-3xl font-extrabold text-text-primary">
+          —:—
+        </p>
+      </div>
+      <div class="card flex flex-col items-center gap-2 p-6 text-center">
+        <Icon name="sunset" size={28} class="text-brand-pink" />
+        <p class="text-xs font-semibold text-text-muted">Güneş Batışı</p>
+        <p id="sun-sunset" class="text-3xl font-extrabold text-text-primary">
+          —:—
+        </p>
+      </div>
+      <div class="card flex flex-col items-center gap-2 p-6 text-center">
+        <Icon name="clock" size={28} class="text-brand-primary" />
+        <p class="text-xs font-semibold text-text-muted">Gün Uzunluğu</p>
+        <p id="sun-daylight" class="text-3xl font-extrabold text-text-primary">
+          —
+        </p>
+      </div>
+    </div>
+
+    <p
+      class="mt-4 rounded-xl border border-border bg-surface-muted px-4 py-3 text-xs text-text-muted"
+    >
+      <Icon name="info" size={13} class="mr-1 inline" />
+      Saatler, astronomik hesaplama formülleriyle üretilen tahmini değerlerdir ve
+      yerel ufuk/atmosfer koşullarına göre birkaç dakika farklılık gösterebilir.
+    </p>
+  </PageContainer>
+</BaseLayout>
+
+<script define:vars={{ citiesWithCoords }} is:inline>
+  window.__sunCities = citiesWithCoords;
+</script>
+
+<script>
+  import { calculateSunTimes } from "@/utils/sunTimes";
+
+  interface CityDatum {
+    slug: string;
+    name: string;
+    lat: number;
+    lng: number;
+  }
+
+  const cities = (window as unknown as { __sunCities: CityDatum[] })
+    .__sunCities;
+  const citySelect = document.getElementById(
+    "sun-city-select",
+  ) as HTMLSelectElement | null;
+  const dateInput = document.getElementById(
+    "sun-date-input",
+  ) as HTMLInputElement | null;
+  const calcBtn = document.getElementById("sun-calculate-btn");
+
+  if (dateInput) {
+    const today = new Date();
+    dateInput.value = today.toISOString().slice(0, 10);
+  }
+
+  function formatDaylight(minutes: number | null): string {
+    if (minutes === null) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h} sa ${m} dk`;
+  }
+
+  function calculate() {
+    const city = cities.find((c) => c.slug === citySelect?.value);
+    if (!city || !dateInput?.value) return;
+    const date = new Date(`${dateInput.value}T12:00:00`);
+    const result = calculateSunTimes(city.lat, city.lng, date);
+
+    document.getElementById("sun-sunrise")!.textContent =
+      result.sunrise ?? "—:—";
+    document.getElementById("sun-sunset")!.textContent = result.sunset ?? "—:—";
+    document.getElementById("sun-daylight")!.textContent = formatDaylight(
+      result.daylightMinutes,
+    );
+  }
+
+  calcBtn?.addEventListener("click", calculate);
+  citySelect?.addEventListener("change", calculate);
+  dateInput?.addEventListener("change", calculate);
+
+  calculate();
+</script>

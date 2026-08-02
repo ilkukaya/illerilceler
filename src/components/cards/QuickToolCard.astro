@@ -1,0 +1,34 @@
+---
+import Icon from "@/components/Icon.astro";
+import { accentClasses, type AccentColor } from "@/utils/colors";
+
+interface Props {
+  icon: string;
+  label: string;
+  href?: string;
+  meta?: string;
+  color?: AccentColor;
+}
+
+const { icon, label, href, meta, color = "purple" } = Astro.props;
+const accent = accentClasses[color];
+const Tag = href ? "a" : "div";
+---
+
+<Tag
+  href={href}
+  class="card card-hover flex flex-col items-start gap-3 p-4 sm:items-center sm:text-center"
+>
+  <span
+    class:list={[
+      "inline-flex shrink-0 items-center justify-center rounded-2xl",
+      accent.bg,
+      accent.text,
+    ]}
+    style="width:40px;height:40px;"
+  >
+    <Icon name={icon} size={19} strokeWidth={2} />
+  </span>
+  <span class="text-sm font-semibold text-text-primary">{label}</span>
+  {meta && <span class="text-xs text-text-muted sm:-mt-2">{meta}</span>}
+</Tag>

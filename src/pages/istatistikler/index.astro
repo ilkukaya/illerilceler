@@ -1,0 +1,217 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageContainer from "@/components/layout/PageContainer.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SectionHeader from "@/components/layout/SectionHeader.astro";
+import StatCard from "@/components/cards/StatCard.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import Icon from "@/components/Icon.astro";
+import { homeStatCards, mountains } from "@/data/geography";
+import { provinces, getProvinceBySlug } from "@/data/provinces";
+
+const path = "/istatistikler/";
+const topPopulated = [...provinces]
+  .sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
+  .slice(0, 5);
+const topArea = [...provinces]
+  .sort((a, b) => (b.areaKm2 ?? 0) - (a.areaKm2 ?? 0))
+  .slice(0, 5);
+const sampleNeighborProvince = getProvinceBySlug("istanbul")!;
+
+const faqs = [
+  {
+    question: "Türkiye'nin en yüksek noktası neresidir?",
+    answer:
+      "Türkiye'nin en yüksek noktası, Ağrı ilinde bulunan 5.137 metre yükseklikteki Ağrı Dağı'dır.",
+  },
+  {
+    question: "Türkiye'nin en kalabalık ili hangisidir?",
+    answer: `${topPopulated[0]?.name}, Türkiye'nin en kalabalık ilidir.`,
+  },
+  {
+    question: "Türkiye'nin yüzölçümü bakımından en büyük ili hangisidir?",
+    answer: `${topArea[0]?.name}, yüzölçümü bakımından Türkiye'nin en büyük ilidir.`,
+  },
+];
+---
+
+<BaseLayout
+  title="İstatistiklerle Türkiye — Nüfus, Yüzölçümü ve Rakım Verileri"
+  description="Türkiye'nin nüfus, yüzölçümü, rakım ve komşu il istatistiklerini keşfedin."
+  path={path}
+>
+  <PageContainer class="py-4">
+    <Breadcrumbs items={[{ label: "İstatistikler", href: path }]} />
+  </PageContainer>
+
+  <PageContainer class="pb-16">
+    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
+      İstatistiklerle Türkiye
+    </h1>
+    <p class="prose-content mt-3 max-w-2xl">
+      Nüfus, yüzölçümü, rakım ve komşuluk ilişkileri gibi temel coğrafi
+      istatistiklere göz atın.
+    </p>
+
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {
+        homeStatCards.map((s) => (
+          <StatCard
+            icon={s.icon}
+            label={s.label}
+            value={s.value}
+            color={s.color}
+            description={s.description}
+          />
+        ))
+      }
+    </div>
+
+    <section
+      id="nufus"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="nufus-heading"
+    >
+      <SectionHeader
+        as="h2"
+        id="nufus-heading"
+        eyebrow="Nüfus"
+        title="En Kalabalık İller"
+        href="/istatistikler/en-kalabalik-iller/"
+        linkLabel="Tam Listeyi Gör"
+      />
+      <div class="mt-4 overflow-hidden rounded-2xl border border-border">
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-border">
+            {
+              topPopulated.map((p, i) => (
+                <tr class="bg-surface">
+                  <td class="w-12 px-4 py-3 font-bold text-text-muted">
+                    {i + 1}
+                  </td>
+                  <td class="px-4 py-3">
+                    <a
+                      href={`/iller/${p.slug}/`}
+                      class="font-semibold text-text-primary hover:text-brand-primary"
+                    >
+                      {p.name}
+                    </a>
+                  </td>
+                  <td class="px-4 py-3 text-right font-bold text-text-primary">
+                    {p.population?.toLocaleString("tr-TR")}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section
+      id="yuzolcumu"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="yuzolcumu-heading"
+    >
+      <SectionHeader
+        as="h2"
+        id="yuzolcumu-heading"
+        eyebrow="Yüzölçümü"
+        title="Yüzölçümüne Göre En Büyük İller"
+        href="/istatistikler/yuzolcumune-gore-en-buyuk-iller/"
+        linkLabel="Tam Listeyi Gör"
+      />
+      <div class="mt-4 overflow-hidden rounded-2xl border border-border">
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-border">
+            {
+              topArea.map((p, i) => (
+                <tr class="bg-surface">
+                  <td class="w-12 px-4 py-3 font-bold text-text-muted">
+                    {i + 1}
+                  </td>
+                  <td class="px-4 py-3">
+                    <a
+                      href={`/iller/${p.slug}/`}
+                      class="font-semibold text-text-primary hover:text-brand-primary"
+                    >
+                      {p.name}
+                    </a>
+                  </td>
+                  <td class="px-4 py-3 text-right font-bold text-text-primary">
+                    {p.areaKm2?.toLocaleString("tr-TR")} km²
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section
+      id="rakim"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="rakim-heading"
+    >
+      <h2
+        id="rakim-heading"
+        class="text-xl font-extrabold text-text-primary sm:text-2xl"
+      >
+        Rakım Bilgileri
+      </h2>
+      <p class="prose-content mt-3">
+        Türkiye'nin en yüksek noktası, <strong class="text-text-primary"
+          >5.137 metre</strong
+        > ile Ağrı Dağı'dır. Aşağıda Türkiye'nin önde gelen yükseltileri listelenmiştir.
+      </p>
+      <div class="mt-4 flex flex-col gap-2">
+        {
+          mountains
+            .sort((a, b) => b.elevationM - a.elevationM)
+            .map((m) => (
+              <div class="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+                <span class="flex items-center gap-2 font-semibold text-text-primary">
+                  <Icon name="mountain" size={15} class="text-brand-primary" />
+                  {m.name}
+                  <span class="font-normal text-text-muted">
+                    ({m.location})
+                  </span>
+                </span>
+                <span class="font-bold text-text-primary">
+                  {m.elevationM.toLocaleString("tr-TR")} m
+                </span>
+              </div>
+            ))
+        }
+      </div>
+    </section>
+
+    <section
+      id="komsu-iller"
+      class="mt-12 scroll-mt-32"
+      aria-labelledby="komsu-iller-heading"
+    >
+      <h2
+        id="komsu-iller-heading"
+        class="text-xl font-extrabold text-text-primary sm:text-2xl"
+      >
+        Komşu İller
+      </h2>
+      <p class="prose-content mt-3">
+        Her il, coğrafi konumuna göre bir veya daha fazla ille sınır komşusudur.
+        Örneğin {sampleNeighborProvince.name},{" "}
+        {sampleNeighborProvince.neighbors?.length ?? 0} ille komşudur. Bir ilin komşularını
+        görmek için o ilin sayfasındaki "Coğrafya" bölümünü inceleyebilirsiniz.
+      </p>
+      <a href="/iller/" class="btn btn-secondary mt-4">
+        Tüm İlleri Görüntüle
+        <Icon name="arrow-right" size={15} />
+      </a>
+    </section>
+
+    <div class="mt-12">
+      <FAQAccordion faqs={faqs} />
+    </div>
+  </PageContainer>
+</BaseLayout>

@@ -1,0 +1,22 @@
+---
+import Icon from "@/components/Icon.astro";
+
+interface Props {
+  size?: number;
+  class?: string;
+}
+
+const { size = 36, class: className = "" } = Astro.props;
+---
+
+<span
+  class={`relative inline-flex shrink-0 items-center justify-center rounded-[30%] shadow-sm ${className}`}
+  style={`width:${size}px;height:${size}px;background:linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));`}
+>
+  <Icon
+    name="map-pin"
+    size={Math.round(size * 0.56)}
+    class="text-white"
+    strokeWidth={2.25}
+  />
+</span>

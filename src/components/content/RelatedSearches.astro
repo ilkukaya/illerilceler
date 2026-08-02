@@ -1,0 +1,29 @@
+---
+import RelatedSearchCard from "@/components/cards/RelatedSearchCard.astro";
+import type { RelatedSearchLink } from "@/types";
+
+interface Props {
+  items: RelatedSearchLink[];
+  title?: string;
+}
+
+const { items, title = "İlgili Aramalar" } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <section aria-labelledby="related-searches-heading">
+      <h2
+        id="related-searches-heading"
+        class="text-xl font-extrabold text-text-primary sm:text-2xl"
+      >
+        {title}
+      </h2>
+      <div class="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {items.map((item) => (
+          <RelatedSearchCard label={item.label} href={item.href} />
+        ))}
+      </div>
+    </section>
+  )
+}
