@@ -55,18 +55,24 @@ const { items } = Astro.props;
 
     if (sections.length === 0) return;
 
+    let currentActiveId: string | null = null;
+
     const setActive = (id: string) => {
+      if (id === currentActiveId) return;
+      currentActiveId = id;
       links.forEach((link) => {
         const active = link.dataset.target === id;
         link.classList.toggle("text-brand-primary", active);
         link.classList.toggle("bg-brand-purple-soft", active);
         link.classList.toggle("text-text-secondary", !active);
-        if (active)
-          link.scrollIntoView({
-            block: "nearest",
-            inline: "center",
-            behavior: "smooth",
-          });
+        if (active) {
+          const nav = link.closest("nav");
+          if (nav) {
+            const target =
+              link.offsetLeft - nav.clientWidth / 2 + link.offsetWidth / 2;
+            nav.scrollTo({ left: target, behavior: "smooth" });
+          }
+        }
       });
     };
 
