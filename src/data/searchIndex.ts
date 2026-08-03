@@ -1,10 +1,6 @@
 import type { SearchIndexEntry } from "@/types";
 import { provinces } from "@/data/provinces";
-import {
-  districts,
-  districtNamesByProvince,
-  getDistrictsForProvince,
-} from "@/data/districts";
+import { districts } from "@/data/districts";
 import { neighborhoods } from "@/data/neighborhoods";
 import { plateCodes } from "@/data/plateCodes";
 import { areaCodes } from "@/data/areaCodes";
@@ -31,27 +27,7 @@ function buildIndex(): SearchIndexEntry[] {
     });
   }
 
-  for (const provinceSlug of Object.keys(districtNamesByProvince)) {
-    const province = getProvinceBySlug(provinceSlug);
-    for (const d of getDistrictsForProvince(provinceSlug)) {
-      entries.push({
-        id: `district-${provinceSlug}-${d.slug}`,
-        type: "district",
-        title: d.name,
-        subtitle: province ? `${province.name} / İlçe` : "İlçe",
-        meta: province?.name,
-        href: `/iller/${provinceSlug}/${d.slug}/`,
-        keywords: [
-          d.name,
-          `${d.name} ilçesi`,
-          `${d.name} ${province?.name ?? ""}`,
-        ],
-      });
-    }
-  }
-  // districts.ts may contain provinces without a name-list entry; include defensively
   for (const d of districts) {
-    if (districtNamesByProvince[d.provinceSlug]) continue;
     const province = getProvinceBySlug(d.provinceSlug);
     entries.push({
       id: `district-${d.provinceSlug}-${d.slug}`,
@@ -60,7 +36,11 @@ function buildIndex(): SearchIndexEntry[] {
       subtitle: province ? `${province.name} / İlçe` : "İlçe",
       meta: province?.name,
       href: `/iller/${d.provinceSlug}/${d.slug}/`,
-      keywords: [d.name, `${d.name} ilçesi`],
+      keywords: [
+        d.name,
+        `${d.name} ilçesi`,
+        `${d.name} ${province?.name ?? ""}`,
+      ],
     });
   }
 

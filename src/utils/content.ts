@@ -49,7 +49,7 @@ export function districtFaqs(
   if (district.population) {
     faqs.push({
       question: `${district.name}'nin nüfusu ne kadardır?`,
-      answer: `${district.name} ilçesinin nüfusu ${new Intl.NumberFormat("tr-TR").format(district.population)} civarındadır (demo veri).`,
+      answer: `${district.name} ilçesinin nüfusu ${new Intl.NumberFormat("tr-TR").format(district.population)} kişidir (${district.populationYear ?? 2025} yılı TÜİK verilerine göre).`,
     });
   }
   return faqs;

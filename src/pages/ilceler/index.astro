@@ -5,17 +5,13 @@ import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
 import SectionHeader from "@/components/layout/SectionHeader.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
 import Icon from "@/components/Icon.astro";
-import { provinces, getProvinceBySlug } from "@/data/provinces";
-import { districtNamesByProvince } from "@/data/districts";
+import { provinces } from "@/data/provinces";
 import { totalDistrictCount } from "@/data/provinces";
 
 const path = "/ilceler/";
 const sorted = [...provinces].sort((a, b) =>
   a.name.localeCompare(b.name, "tr"),
 );
-const detailedProvinces = Object.keys(districtNamesByProvince)
-  .map((slug) => getProvinceBySlug(slug))
-  .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
 const faqs = [
   {
@@ -57,17 +53,16 @@ const faqs = [
       </p>
     </div>
 
-    <section class="mt-10" aria-labelledby="detayli-heading">
+    <section class="mt-10" aria-labelledby="tum-iller-heading">
       <SectionHeader
         as="h2"
-        id="detayli-heading"
-        eyebrow="Detaylı Veri"
-        title="Ayrıntılı İlçe Listesi Bulunan İller"
-        description="Bu iller için tüm ilçelerin nüfus, mahalle sayısı ve daha fazla bilgiye ulaşabilirsiniz."
+        id="tum-iller-heading"
+        title="Tüm İllere Göre Gözat"
+        description="Her ilin tüm ilçelerinin nüfus, mahalle sayısı ve daha fazla bilgisine ulaşmak için ili seçin."
       />
       <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {
-          detailedProvinces.map((p) => (
+          sorted.map((p) => (
             <a
               href={`/iller/${p.slug}/ilceler/`}
               class="card card-hover flex items-center justify-between gap-2 p-4"
@@ -81,27 +76,6 @@ const faqs = [
                 </span>
               </span>
               <Icon name="arrow-right" size={16} class="text-text-muted" />
-            </a>
-          ))
-        }
-      </div>
-    </section>
-
-    <section class="mt-10" aria-labelledby="tum-iller-heading">
-      <SectionHeader
-        as="h2"
-        id="tum-iller-heading"
-        title="Tüm İllere Göre Gözat"
-        description="Bir ile ait ilçeleri görmek için ili seçin."
-      />
-      <div class="mt-5 flex flex-wrap gap-2">
-        {
-          sorted.map((p) => (
-            <a href={`/iller/${p.slug}/`} class="pill">
-              {p.name}{" "}
-              <span class="ml-1 text-text-muted">
-                ({p.districtCount ?? "—"})
-              </span>
             </a>
           ))
         }

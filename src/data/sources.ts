@@ -19,4 +19,4 @@ export const institutionalSources: SourceRef[] = [
 ];
 
 export const dataDisclaimer =
-  "Bu sayfadaki rakamlar, illerilceler.com editör ekibi tarafından derlenen referans/demo verilerdir ve düzenli olarak gözden geçirilir. Resmî ve güncel veriler için ilgili kurumların kaynaklarını kontrol ediniz.";
+  "Bu sayfadaki nüfus, yüzölçümü, rakım ve alan kodu gibi sayısal veriler TÜİK, Harita Genel Müdürlüğü ve Türk Telekom kaynaklı resmî kayıtlardan derlenmiştir. Tanıtım metinleri illerilceler.com editör ekibi tarafından yazılmıştır. En güncel resmî veriler için ilgili kurumların kaynaklarını kontrol ediniz.";

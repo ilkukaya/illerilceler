@@ -4,33 +4,32 @@ import {
   totalDistrictCount,
   totalPopulation,
 } from "@/data/provinces";
+import { formatNumber, formatArea, formatElevation } from "@/utils/format";
 
 export const nationalStats = {
-  population: totalPopulation || 85279553,
-  populationYear: 2024,
+  population: totalPopulation,
+  populationYear: 2025,
   areaKm2: 783562,
   highestElevationM: 5137,
   highestElevationPlace: "Ağrı Dağı",
-  averageDistrictPopulation: Math.round(
-    (totalPopulation || 85279553) / (totalDistrictCount || 973),
-  ),
+  averageDistrictPopulation: Math.round(totalPopulation / totalDistrictCount),
   provinceCount: provinces.length,
-  districtCount: totalDistrictCount || 973,
+  districtCount: totalDistrictCount,
 };
 
 export const homeStatCards: StatDefinition[] = [
   {
     key: "population",
     label: "Nüfus",
-    value: "85.279.553",
+    value: formatNumber(nationalStats.population),
     icon: "users",
     color: "blue",
-    description: "Toplam nüfus (2024)",
+    description: `Toplam nüfus (${nationalStats.populationYear})`,
   },
   {
     key: "area",
     label: "Yüzölçümü",
-    value: "783.562 km²",
+    value: formatArea(nationalStats.areaKm2),
     icon: "map",
     color: "green",
     description: "Toplam yüzölçümü",
@@ -38,15 +37,15 @@ export const homeStatCards: StatDefinition[] = [
   {
     key: "elevation",
     label: "Rakım",
-    value: "5.137 m",
+    value: formatElevation(nationalStats.highestElevationM),
     icon: "mountain",
     color: "purple",
-    description: "En yüksek nokta (Ağrı Dağı)",
+    description: `En yüksek nokta (${nationalStats.highestElevationPlace})`,
   },
   {
     key: "district-population",
     label: "İlçe Nüfusu",
-    value: "93.356",
+    value: formatNumber(nationalStats.averageDistrictPopulation),
     icon: "bar-chart-3",
     color: "orange",
     description: "Ortalama ilçe nüfusu",

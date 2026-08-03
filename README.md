@@ -17,14 +17,15 @@ minimal JavaScript kullanır ve on binlerce sayfaya ölçeklenebilecek bir veri/
 - [Erişilebilirlik ve Performans](#erişilebilirlik-ve-performans)
 - [Reklam Alanları](#reklam-alanları)
 - [Deployment](#deployment)
-- [Gerçek Veri Kaynağına Geçiş](#gerçek-veri-kaynağına-geçiş)
+- [Kapsam ve Sonraki Adımlar](#kapsam-ve-sonraki-adımlar)
 
 ## Özellikler
 
 - **Anasayfa** — arama, popüler aramalar, kategori menüsü, şematik Türkiye haritası, ulusal istatistikler, günün
   bilgisi, eğitim köşesi ve hızlı araçlar.
-- **İl / ilçe sayfaları** — her il ve (12 öncelikli il için) her ilçe için özet kartlar, sekmeli/anchor tabanlı
-  bölümler, konum haritası, SSS ve ilgili aramalar.
+- **İl / ilçe sayfaları** — 81 ilin ve 973 ilçenin tamamı için gerçek temel istatistiklerle (nüfus, yüzölçümü,
+  mahalle sayısı) özet kartlar, konum haritası, SSS ve ilgili aramalar; 12 öncelikli il ve 45 öncelikli ilçe
+  için ayrıca uzun formatlı tanıtım içeriği (tarihçe, ekonomi, turizm, ulaşım, popüler yerler).
 - **Kod sayfaları** — plaka kodu, alan kodu ve posta kodu için "kısa cevap" bloklu, AEO'ya uygun sayfalar
   (`/plaka-kodlari/47/`, `/alan-kodlari/312/`, `/posta-kodlari/34718/`).
 - **Arama** — istemci tarafında çalışan, Türkçe karakter normalizasyonlu fuzzy arama; hem üst çubuktaki
@@ -118,22 +119,26 @@ Tüm içerik `src/data/*.ts` dosyalarında saklanır; sayfalar bu dosyalardan ok
 
 | Dosya | İçerik |
 |---|---|
-| `provinces.ts` | 81 ilin tamamı (plaka, alan kodu, bölge, temel istatistikler); 12 öncelikli il için tam
-  içerik (özet, tarihçe, ekonomi, turizm, SSS, kaynaklar) |
-| `districts.ts` | İstanbul'un 39 ilçesi + diğer öncelikli illerden seçili ilçeler tam kayıt; geri kalan
-  ilçeler `districtNamesByProvince` üzerinden isim listesinden **otomatik üretilen** (stub) kayıtlardır — bu
-  sayede her ilçe adı gerçek, kırık olmayan bir sayfaya bağlanır |
-| `neighborhoods.ts` | Kadıköy'ün 21 mahallesi (posta koduyla birlikte) |
+| `provinces.ts` | 81 ilin tamamı — gerçek nüfus (TÜİK ADNKS 2025), yüzölçümü/rakım (Harita Genel
+  Müdürlüğü), alan kodu (Türk Telekom), koordinat, ilçe/mahalle sayısı; 12 öncelikli il için ayrıca tam
+  editöryal içerik (özet, tarihçe, ekonomi, turizm, SSS, kaynaklar) |
+| `districts.ts` | 973 ilçenin tamamı — gerçek nüfus, yüzölçümü, mahalle sayısı; İstanbul'un 39 ilçesi +
+  Çankaya, Keçiören, Konak, Karşıyaka, Artuklu, Midyat için ayrıca tam editöryal içerik. `districtNamesByProvince`
+  bu dizeden **otomatik türetilir** (artık elle bakımı gereken ayrı bir liste değildir) |
+| `neighborhoods.ts` | Kadıköy'ün 21 mahallesi (posta koduyla birlikte) — mahalle/köy seviyesi bu turda
+  kapsam dışıdır |
 | `plateCodes.ts`, `areaCodes.ts` | `provinces.ts`'den **türetilir** (elle kopyalanmaz) |
 | `postalCodes.ts` | `neighborhoods.ts`'den türetilen + birkaç ek örnek kayıt |
 | `regions.ts` | 7 coğrafi bölge |
-| `geography.ts` | Ulusal istatistikler, "Günün Bilgisi" kayıtları, dağ/nehir/göl listeleri |
+| `geography.ts` | Ulusal istatistikler (`provinces.ts`'den türetilir), "Günün Bilgisi" kayıtları,
+  dağ/nehir/göl listeleri |
 | `education.ts` | Sınıf seviyeleri, konular, etkinlikler, quiz soru bankası |
 | `searchIndex.ts` | Yukarıdaki tüm kaynaklardan **build-time'da** derlenen tekleştirilmiş arama indeksi |
 | `sources.ts` | Kurumsal kaynak listesi (TÜİK, PTT, BTK vb.) ve veri sorumluluk reddi metni |
 
-Demo/örnek olan sayısal alanlar `isDemoData: true` ile işaretlenmiştir. Her il/ilçe sayfasında bir
-**Kaynaklar** kartı ve sitenin altbilgisinde sabit bir uyarı metni bulunur.
+`isDemoData` alanı artık `false` — tüm il/ilçe temel istatistikleri gerçek, kaynaklı verilerdir (bkz.
+`sources.ts` → `dataDisclaimer`). Mahalle/köy/posta kodu verisi hâlâ sınırlı bir örnek kümesidir. Her
+il/ilçe sayfasında bir **Kaynaklar** kartı ve sitenin altbilgisinde sabit bir uyarı metni bulunur.
 
 ### Tipler
 
@@ -142,20 +147,23 @@ Bakınız `src/types/index.ts` — `Province`, `District`, `Neighborhood`, `Plat
 
 ## Yeni İçerik Ekleme
 
-### Yeni bir il için detaylı içerik eklemek
+### Yeni bir il için detaylı (editöryal) içerik eklemek
 
-1. `src/data/provinces.ts` içinde ilgili ilin objesine `summary`, `overview`, `economy`, `tourism`,
-   `transportation`, `education`, `famousFor`, `popularPlaces`, `faqs`, `sources` alanlarını ekleyin.
-2. İlçe listesi göstermek istiyorsanız `src/data/districts.ts` içindeki `districtNamesByProvince` sözlüğüne
-   ilin tüm ilçe adlarını ekleyin — sayfalar otomatik olarak üretilir (`getStaticPaths`).
-3. Daha zengin ilçe kartları için `districts` dizisine tam `District` kayıtları ekleyebilirsiniz (opsiyonel;
-   eklenmeyen ilçeler isim listesinden stub sayfa olarak üretilmeye devam eder).
+Tüm 81 il zaten gerçek temel istatistiklerle `provinces.ts` içinde mevcuttur — yeni bir il eklemeniz
+gerekmez. Bir ile uzun formatlı tanıtım içeriği eklemek için ilgili ilin objesine `summary`, `overview`,
+`economy`, `tourism`, `transportation`, `education`, `famousFor`, `popularPlaces`, `faqs`, `sources`
+alanlarını ekleyin; sayfa şablonu bu alanları otomatik olarak (varsa) gösterir.
 
-### Yeni bir ilçe için tam içerik eklemek
+### Yeni bir ilçeye tam içerik eklemek
 
-`src/data/districts.ts` → `districts` dizisine yeni bir obje ekleyin (bkz. `kadikoy` kaydı örnek olarak en
-kapsamlı olanıdır). `provinceSlug` ve `slug` alanları, `districtNamesByProvince` listesindeki adın
-`turkishSlugify()` ile ürettiği slug'la eşleşmelidir.
+Tüm 973 ilçe zaten gerçek temel istatistiklerle (nüfus, yüzölçümü, mahalle sayısı) `districts.ts` içinde
+mevcuttur. Bir ilçeye uzun formatlı içerik (`overview`, `transportation`, `education`, `health`,
+`socialLife`, `historicalPlaces`, `popularPlaces`, `neighborhoods`, `faqs`, `sources`) eklemek için ilgili
+ilçenin objesini `provinceSlug` + `slug` alanlarından bulup düzenleyin (bkz. `kadikoy` kaydı en kapsamlı
+örnektir). Yeni bir il/ilçe **eklemeniz** gerekiyorsa (ör. idari bir değişiklik sonrası), `id`/`slug`/`name`/
+`provinceSlug` alanlarını gerçek veriyle doldurup diziye ekleyin — `districtNamesByProvince`,
+`getDistrictsForProvince`, arama indeksi ve site haritası bu diziden otomatik türetildiği için başka bir
+yerde güncelleme gerekmez.
 
 ### Yeni bir kod sayfası eklemek
 
@@ -164,12 +172,12 @@ kapsamlı olanıdır). `provinceSlug` ve `slug` alanları, `districtNamesByProvi
 - **Posta kodu:** `postalCodes.ts` içindeki `extra` dizisine `{ code, provinceSlug, districtSlug }` ekleyin
   ya da `neighborhoods.ts`'e mahalle + posta kodu ekleyin (otomatik olarak posta kodu listesine dahil olur).
 
-### Demo verinin gerçek veriyle değiştirilmesi
+### Verinin güncellenmesi
 
-Tüm sayısal/istatistiksel alanlar `src/data/*.ts` dosyalarında merkezi olarak tutulur. Gerçek bir veri
-kaynağına (TÜİK, PTT, BTK API'leri gibi) geçerken sadece bu dosyaların içeriğini güncellemeniz yeterlidir;
-bileşenler ve sayfalar değişmeden çalışmaya devam eder. Bkz.
-[Gerçek Veri Kaynağına Geçiş](#gerçek-veri-kaynağına-geçiş).
+Tüm sayısal/istatistiksel alanlar `src/data/*.ts` dosyalarında merkezi olarak tutulur. İl/ilçe nüfus,
+yüzölçümü, rakım ve alan kodu verisi TÜİK ADNKS, Harita Genel Müdürlüğü ve Türk Telekom kaynaklı olup
+düzenli aralıklarla (yeni ADNKS sonuçları yayınlandığında) bu dosyaların içeriği güncellenerek yenilenmelidir;
+bileşenler ve sayfalar değişmeden çalışmaya devam eder — bkz. [Kapsam ve Sonraki Adımlar](#kapsam-ve-sonraki-adımlar).
 
 ## SEO / AEO Mimarisi
 
@@ -216,22 +224,25 @@ npm run build
 `astro.config.mjs` içindeki `site` alanını (şu an `https://illerilceler.com`) kendi alan adınızla
 güncellemeyi unutmayın — canonical URL'ler ve sitemap bu değeri kullanır.
 
-## Gerçek Veri Kaynağına Geçiş
+## Kapsam ve Sonraki Adımlar
 
-Bu proje demo/gösterim verisiyle gelir. Prodüksiyona geçerken:
+İl/ilçe temel istatistikleri (nüfus, yüzölçümü, rakım, alan kodu, koordinat) artık **81 ilin ve 973
+ilçenin tamamı için** TÜİK ADNKS 2025, Harita Genel Müdürlüğü ve Türk Telekom kaynaklı gerçek verilerdir.
+Kalan kapsam genişletmeleri:
 
-1. **Nüfus/yüzölçümü/rakım** — TÜİK ADNKS ve Harita Genel Müdürlüğü verileriyle `provinces.ts` /
-   `districts.ts` güncellenmeli, `isDemoData` bayrakları kaldırılmalı.
-2. **Posta kodları** — PTT'nin resmi posta kodu veri setiyle `postalCodes.ts` ve `neighborhoods.ts`
-   genişletilmeli (973 ilçe / 32.000+ mahalle kapsamı için).
-3. **Alan kodları** — BTK yayınlarıyla doğrulanmalı.
-4. **Görseller** — `SceneArt.astro` ile üretilen soyut illüstrasyonların yerine lisanslı/özgün fotoğraflar
+1. **Editöryal içerik** — uzun formatlı tanıtım metinleri (tarihçe, ekonomi, turizm, popüler yerler, SSS)
+   şu an yalnızca 12 öncelikli il ve 45 öncelikli ilçe için mevcuttur; diğer 69 il ve 928 ilçe yalnızca
+   isim + temel istatistiklerle listelenir.
+2. **Posta kodları / mahalleler / köyler** — `postalCodes.ts` ve `neighborhoods.ts` hâlâ Kadıköy'ün 21
+   mahallesiyle sınırlı örnek veridir; PTT'nin resmi veri setiyle 973 ilçe / 32.000+ mahalle / 18.000+ köy
+   kapsamına genişletilmesi ayrı bir çalışma gerektirir.
+3. **Görseller** — `SceneArt.astro` ile üretilen soyut illüstrasyonların yerine lisanslı/özgün fotoğraflar
    `public/images/provinces/` ve `public/images/districts/` altına eklenip `heroImage` alanları
    güncellenerek kullanılabilir.
-5. **Mesafe/güneş hesaplayıcıları** — şu an yalnızca koordinatı tanımlı 12 il için çalışır
-   (`provinces.ts` → `coordinates`); tüm illere koordinat eklenmesi yeterlidir, sayfa kodu değişmez.
+4. **Veri tazeleme** — TÜİK her yıl şubat ayında bir önceki yılın ADNKS sonuçlarını yayınlar; `provinces.ts`
+   / `districts.ts` bu yayınlarla birlikte yeniden derlenmelidir.
 
 ---
 
-_Bu README, projenin mevcut (demo) durumunu yansıtır. Sorularınız için [/iletisim/](/iletisim/) sayfasını
+_Bu README, projenin mevcut durumunu yansıtır. Sorularınız için [/iletisim/](/iletisim/) sayfasını
 kullanabilirsiniz._
