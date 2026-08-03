@@ -1,8 +1,9 @@
 ---
-import SceneArt from "@/components/geography/SceneArt.astro";
+import LocationThumb from "@/components/geography/LocationThumb.astro";
 import Icon from "@/components/Icon.astro";
 import { formatNumber } from "@/utils/format";
 import { getRegion } from "@/data/regions";
+import { getProvinceImage } from "@/generated/locationImageManifest";
 import type { Province } from "@/types";
 
 interface Props {
@@ -11,8 +12,7 @@ interface Props {
 
 const { province } = Astro.props;
 const region = getRegion(province.region);
-const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
-const hue = hues[province.plateCode.charCodeAt(0) % hues.length];
+const image = getProvinceImage(province.slug)!;
 ---
 
 <a
@@ -20,7 +20,7 @@ const hue = hues[province.plateCode.charCodeAt(0) % hues.length];
   class="card card-hover group flex flex-col overflow-hidden"
 >
   <div class="relative h-32 w-full overflow-hidden">
-    <SceneArt seed={province.slug} hue={hue} class="h-full w-full" />
+    <LocationThumb image={image} class="h-full w-full" />
     <span
       class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-text-primary shadow-sm backdrop-blur"
     >

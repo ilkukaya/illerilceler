@@ -11,7 +11,7 @@ import FAQAccordion from "@/components/content/FAQAccordion.astro";
 import RelatedSearches from "@/components/content/RelatedSearches.astro";
 import SourcesCard from "@/components/content/SourcesCard.astro";
 import QuickToolCard from "@/components/cards/QuickToolCard.astro";
-import SceneArt from "@/components/geography/SceneArt.astro";
+import LocationHero from "@/components/geography/LocationHero.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
 import Icon from "@/components/Icon.astro";
 import { getProvinceBySlug } from "@/data/provinces";
@@ -21,6 +21,7 @@ import {
   getNeighborDistricts,
 } from "@/data/districts";
 import { getPostalCodesForDistrict } from "@/data/postalCodes";
+import { getDistrictImage } from "@/generated/locationImageManifest";
 import { formatNumber, formatArea, formatElevation } from "@/utils/format";
 import { districtFaqs } from "@/utils/content";
 import { webPageSchema, faqPageSchema } from "@/utils/seo";
@@ -54,8 +55,7 @@ const neighborDistricts = getNeighborDistricts(district);
 const postalCodes = getPostalCodesForDistrict(provinceSlug, districtSlug);
 const faqs = districtFaqs(district, province.name);
 const path = `/iller/${provinceSlug}/${districtSlug}/`;
-const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
-const hue = hues[districtSlug.charCodeAt(0) % hues.length];
+const image = getDistrictImage(district.id)!;
 
 const summaryStats = [
   { label: "İl", value: province.name },
@@ -138,7 +138,7 @@ const breadcrumbItems = [
   description={district.summary ??
     `${district.name}, ${province.name} iline bağlı bir ilçedir. Nüfus, mahalle, posta kodu ve daha fazla bilgi.`}
   path={path}
-  image={district.heroImage}
+  image={image.openGraph}
 >
   <StructuredData
     schema={[
@@ -157,9 +157,9 @@ const breadcrumbItems = [
 
   <PageContainer>
     <div class="relative overflow-hidden rounded-3xl">
-      <SceneArt
-        seed={districtSlug}
-        hue={hue}
+      <LocationHero
+        image={image}
+        priority={true}
         class="absolute inset-0 h-full w-full"
       />
       <div

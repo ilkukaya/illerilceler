@@ -118,6 +118,61 @@ export interface District {
   lastReviewed?: string;
 }
 
+/**
+ * Image priority tiers for province/district hero imagery, in the order
+ * they should be preferred (see `src/generated/locationImageManifest.ts`):
+ * 1. real-photo         — licensed/verified local photograph
+ * 2. ai-photorealistic  — AI image generated from that place's real features
+ * 3. stylized           — hand-illustrated scene using real landmark silhouettes
+ * 4. fallback           — borrowed from the parent province/region, unverified
+ */
+export type LocationImageType =
+  | "real-photo"
+  | "ai-photorealistic"
+  | "stylized"
+  | "fallback";
+
+export interface FocalPoint {
+  x: number;
+  y: number;
+}
+
+export interface ImageCredit {
+  author?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  originalFileUrl?: string;
+  license?: string;
+  licenseUrl?: string;
+  attributionRequired?: boolean;
+}
+
+export interface ImageAIMetadata {
+  provider?: string;
+  model?: string;
+  prompt?: string;
+  generatedAt?: string;
+  referenceLocation?: string;
+}
+
+export interface LocationImage {
+  type: LocationImageType;
+  /** Key into the LocationScene archetype library; used whenever no real/AI raster asset is present. */
+  sceneKey: string;
+  locationKind: "province" | "district";
+  locationSlug: string;
+  provinceSlug?: string;
+  hero: string;
+  thumbnail: string;
+  openGraph: string;
+  alt: string;
+  caption?: string;
+  focalPoint?: FocalPoint;
+  credit?: ImageCredit;
+  aiMetadata?: ImageAIMetadata;
+  verifiedLocation: boolean;
+}
+
 export interface Neighborhood {
   id: string;
   slug: string;

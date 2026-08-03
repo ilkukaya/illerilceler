@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# generated OG share images (npm run og:generate, runs automatically before build)
+public/og/
+
 # generated types
 .astro/
 

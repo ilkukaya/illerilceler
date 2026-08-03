@@ -1,0 +1,47 @@
+---
+/**
+ * Full-bleed hero visual for province/district pages. Renders the real or
+ * AI-generated photo when the manifest has resolved one, otherwise falls
+ * back to the landmark-aware LocationScene illustration — same container,
+ * same fill behavior either way, so there's no layout shift when a photo
+ * is later dropped in for a location that's on the stylized tier today.
+ */
+import { Picture } from "astro:assets";
+import LocationScene from "./LocationScene.astro";
+import { resolveHeroAssetModule } from "@/generated/locationImageManifest";
+import type { LocationImage } from "@/types";
+
+interface Props {
+  image: LocationImage;
+  class?: string;
+  /** Set true only for the page's single main LCP image. */
+  priority?: boolean;
+  sizes?: string;
+}
+
+const { image, class: className = "", priority = false, sizes = "100vw" } = Astro.props;
+const isRaster = image.type === "real-photo" || image.type === "ai-photorealistic";
+const resolvedModule = isRaster ? resolveHeroAssetModule(image.hero) : undefined;
+const seed =
+  image.locationKind === "district" ? `${image.provinceSlug}-${image.locationSlug}` : image.locationSlug;
+const objectPosition = `${image.focalPoint?.x ?? 50}% ${image.focalPoint?.y ?? 48}%`;
+---
+
+{
+  resolvedModule ? (
+    <Picture
+      src={resolvedModule}
+      formats={["avif", "webp"]}
+      widths={[640, 960, 1280, 1600]}
+      sizes={sizes}
+      alt={image.alt}
+      loading={priority ? "eager" : "lazy"}
+      fetchpriority={priority ? "high" : "auto"}
+      decoding="async"
+      class={`object-cover ${className}`}
+      style={`object-position:${objectPosition}`}
+    />
+  ) : (
+    <LocationScene sceneKey={image.sceneKey} seed={seed} class={className} />
+  )
+}

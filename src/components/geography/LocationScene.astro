@@ -1,0 +1,49 @@
+---
+/**
+ * Landmark-aware "premium stylized" illustration for a province/district.
+ * Used as the hero/thumbnail visual whenever no real or AI-generated
+ * photograph is available for that location (see locationImageManifest.ts).
+ * Deterministic per `seed` — the same location always renders the same scene.
+ */
+import { sceneArchetypes } from "@/data/sceneArchetypes.js";
+import {
+  CANVAS_W,
+  CANVAS_H,
+  seededRandom,
+  grainOverlayDefs,
+  grainOverlayLayers,
+} from "@/utils/sceneEngine.js";
+
+interface Props {
+  sceneKey: string;
+  seed?: string;
+  class?: string;
+}
+
+const { sceneKey, seed, class: className = "" } = Astro.props;
+const resolvedSeed = seed ?? sceneKey;
+const archetypes = sceneArchetypes as Record<string, (typeof sceneArchetypes)["bosphorus-strait"]>;
+const archetype = archetypes[sceneKey] ?? archetypes["anatolian-plain-castle"];
+const rng = seededRandom(resolvedSeed);
+const layers = archetype.build(rng).join("");
+const uid = `${sceneKey}-${resolvedSeed}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 40);
+---
+
+<svg
+  viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+  preserveAspectRatio="xMidYMax slice"
+  class={className}
+  role="img"
+  aria-hidden="true"
+>
+  <defs>
+    <linearGradient id={`sky-${uid}`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color={archetype.sky[0]}></stop>
+      <stop offset="100%" stop-color={archetype.sky[1]}></stop>
+    </linearGradient>
+    <Fragment set:html={grainOverlayDefs(uid)} />
+  </defs>
+  <rect width={CANVAS_W} height={CANVAS_H} fill={`url(#sky-${uid})`}></rect>
+  <Fragment set:html={layers} />
+  <Fragment set:html={grainOverlayLayers(uid)} />
+</svg>

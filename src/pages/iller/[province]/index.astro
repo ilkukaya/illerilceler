@@ -11,12 +11,13 @@ import FAQAccordion from "@/components/content/FAQAccordion.astro";
 import RelatedSearches from "@/components/content/RelatedSearches.astro";
 import SourcesCard from "@/components/content/SourcesCard.astro";
 import QuickToolCard from "@/components/cards/QuickToolCard.astro";
-import SceneArt from "@/components/geography/SceneArt.astro";
+import LocationHero from "@/components/geography/LocationHero.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
 import Icon from "@/components/Icon.astro";
 import { provinces, getNeighborProvinces } from "@/data/provinces";
 import { getRegion } from "@/data/regions";
 import { getDistrictsForProvince } from "@/data/districts";
+import { getProvinceImage } from "@/generated/locationImageManifest";
 import { formatNumber, formatArea, formatElevation } from "@/utils/format";
 import { provinceFaqs } from "@/utils/content";
 import { administrativeAreaSchema, faqPageSchema } from "@/utils/seo";
@@ -34,8 +35,7 @@ const neighborProvinces = getNeighborProvinces(province);
 const districts = getDistrictsForProvince(province.slug);
 const faqs = provinceFaqs(province);
 const path = `/iller/${province.slug}/`;
-const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
-const hue = hues[province.plateCode.charCodeAt(0) % hues.length];
+const image = getProvinceImage(province.slug)!;
 
 const summaryStats = [
   { label: "Plaka", value: province.plateCode },
@@ -123,7 +123,7 @@ const relatedSearches = [
   description={province.summary ??
     `${province.name} ili hakkında plaka kodu, alan kodu, ilçeleri, nüfusu ve coğrafi bilgiler.`}
   path={path}
-  image={province.heroImage}
+  image={image.openGraph}
   schema={[
     administrativeAreaSchema({
       name: province.name,
@@ -148,9 +148,9 @@ const relatedSearches = [
   <!-- Hero -->
   <PageContainer>
     <div class="relative overflow-hidden rounded-3xl">
-      <SceneArt
-        seed={province.slug}
-        hue={hue}
+      <LocationHero
+        image={image}
+        priority={true}
         class="absolute inset-0 h-full w-full"
       />
       <div

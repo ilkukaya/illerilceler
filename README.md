@@ -12,6 +12,7 @@ minimal JavaScript kullanır ve on binlerce sayfaya ölçeklenebilecek bir veri/
 - [Yerel Geliştirme](#yerel-geliştirme)
 - [Build Komutları](#build-komutları)
 - [Veri Modeli](#veri-modeli)
+- [Görsel Sistemi](#görsel-sistemi)
 - [Yeni İçerik Ekleme](#yeni-i̇çerik-ekleme)
 - [SEO / AEO Mimarisi](#seo--aeo-mimarisi)
 - [Erişilebilirlik ve Performans](#erişilebilirlik-ve-performans)
@@ -57,20 +58,24 @@ src/
     layout/        Header, Footer, Breadcrumbs, PageContainer, MobileMenu...
     search/        Arama kutusu, komut paleti, sonuç kartı
     cards/         StatCard, CategoryCard, CityCard, DistrictCard...
-    geography/      TurkeyMap, LocationMapCard, SceneArt (illüstrasyon)
+    geography/      TurkeyMap, LocationMapCard, LocationHero/LocationThumb/LocationScene (bkz. Görsel Sistemi)
     content/        FAQAccordion, InfoTable, RelatedSearches, AdSlot...
     education/      Quiz motoru, eğitim illüstrasyonu, sınıf kartları
     code-pages/     Plaka görseli, büyük kod hero'su, özet kartı
     seo/            SEOHead, StructuredData (JSON-LD)
-  data/            Tüm demo veri kaynağı (bkz. Veri Modeli)
+  data/            Tüm veri kaynağı (bkz. Veri Modeli) + sceneArchetypes.js, locationImageOverrides.ts
+  generated/       locationImageManifest.ts (il/ilçe görsel kayıtlarının tek kaynağı, build-time hesaplanır)
+  assets/locations/ Gerçek/AI fotoğrafların bırakılacağı klasör (bkz. Görsel Sistemi)
   layouts/         BaseLayout.astro (tek layout, tüm sayfalar bunu kullanır)
   pages/           Dosya tabanlı route'lar (bkz. aşağıdaki route haritası)
   styles/          global.css (tasarım token'ları + Tailwind tema eşlemesi)
-  utils/           format, search, slugify, seo, distance, sunTimes, content...
+  utils/           format, search, slugify, seo, distance, sunTimes, content, sceneEngine.js...
   types/           Paylaşılan TypeScript tipleri
   config/          site.ts (site geneli sabitler)
+scripts/           generate-og-images.ts, generate-image-prompts.ts, validate-location-images.ts
+content/           image-generation-prompts.json (AI görsel üretimi için hazır prompt paketi)
 public/
-  icons/, images/, maps/, fonts/   statik varlıklar
+  icons/, images/, maps/, fonts/, og/   statik varlıklar (og/ = build-time üretilen paylaşım görselleri)
 ```
 
 ### Route haritası (özet)
@@ -104,13 +109,17 @@ npm run dev        # http://localhost:4321
 ## Build Komutları
 
 ```bash
-npm run check       # astro check (TypeScript + Astro şablon doğrulama)
-npm run build        # check + production build -> dist/
-npm run preview       # üretim build'ini yerelde servis eder
-npm run format        # Prettier (+ prettier-plugin-astro)
+npm run check              # astro check (TypeScript + Astro şablon doğrulama)
+npm run build               # og:generate (prebuild) + check + production build -> dist/ + images:validate
+npm run preview              # üretim build'ini yerelde servis eder
+npm run format               # Prettier (+ prettier-plugin-astro)
+npm run og:generate           # 1054 il/ilçe için paylaşım (OG) görselini yeniden üretir (public/og/)
+npm run prompts:generate       # content/image-generation-prompts.json dosyasını yeniden üretir
+npm run images:validate        # Görsel kaydı raporu (bkz. Görsel Sistemi) — build sonunda otomatik çalışır
 ```
 
-`npm run build` her zaman önce `astro check` çalıştırır; tip hatası varsa build durur.
+`npm run build`, `prebuild` hook'u ile önce OG görsellerini üretir, sonra `astro check` çalıştırır (tip
+hatası varsa build durur), ardından `astro build` ve son olarak `images:validate` raporunu basar.
 
 ## Veri Modeli
 
@@ -143,7 +152,43 @@ il/ilçe sayfasında bir **Kaynaklar** kartı ve sitenin altbilgisinde sabit bir
 ### Tipler
 
 Bakınız `src/types/index.ts` — `Province`, `District`, `Neighborhood`, `PlateCode`, `AreaCode`, `PostalCode`,
-`Region`, `FAQItem`, `QuizDefinition` vb.
+`Region`, `FAQItem`, `QuizDefinition`, `LocationImage` vb.
+
+## Görsel Sistemi
+
+İl/ilçe hero ve kart görselleri, gerçek yeri en iyi şekilde temsil edecek hibrit bir öncelik sırasıyla
+seçilir: **gerçek fotoğraf → AI fotogerçekçi görsel → premium stilize illüstrasyon → aynı ilin geçici
+(fallback) görseli**. Erişilebilir bir lisanslı fotoğraf kaynağı (Wikimedia Commons vb.) olmadığı için bugün
+81 il ve 973 ilçenin tamamı 3. veya 4. katmanda; ancak altyapı, ilk iki katman için tamamen hazır.
+
+- **`src/data/sceneArchetypes.js` + `src/utils/sceneEngine.js`** — 19 farklı, gerçek Türkiye
+  coğrafyası/mimarisine dayalı illüstrasyon arketipi (Boğaz köprüsü, Mardin'in taş terasları, Kapadokya'nın
+  peri bacaları, Karadeniz yaylaları, Pamukkale travertenleri vb.), tekrar kullanılabilir SVG çizim
+  fonksiyonlarıyla (`ridgeShape`, `terracedHouses`, `fairyChimneys`, `suspensionBridge`...) üretilir.
+- **`src/data/locationImageOverrides.ts`** — 21 öncelikli il + 21 öncelikli ilçe için elle seçilmiş arketip,
+  odak noktası (focal point) ve doğal alt metin; geri kalan 60 il gerçek `region`/`seas` verisinden, geri
+  kalan ilçeler `coastline` verisinden veya bağlı olduğu ilin arketipinden otomatik türetilir.
+- **`src/generated/locationImageManifest.ts`** — her il/ilçe için tek `LocationImage` kaydını hesaplayan
+  ve `src/assets/locations/**/hero-{real,ai}.*` altında gerçek/AI fotoğraf olup olmadığını
+  (`import.meta.glob` ile) kontrol eden tek kaynak. Bir fotoğraf eklendiğinde sayfa otomatik olarak o
+  fotoğrafı kullanmaya geçer — kod değişikliği gerekmez.
+- **`LocationHero.astro` / `LocationThumb.astro`** — `astro:assets` `<Picture>` ile responsive
+  AVIF/WebP + doğru `loading`/`fetchpriority`, gerçek/AI görsel yoksa aynı konteynerde `LocationScene`
+  illüstrasyonuna döner (CLS yok).
+- **`content/image-generation-prompts.json`** (`npm run prompts:generate`) — 42 öncelikli konum için elle
+  yazılmış, geri kalanı için o konumun gerçek verisinden (bölge, kıyı, iklim) otomatik oluşturulmuş,
+  hazır AI görsel üretim prompt'ları + negatif prompt + beklenen dosya yolu.
+- **`scripts/generate-og-images.ts`** (`npm run og:generate`, prebuild) — her il/ilçe için aynı
+  illüstrasyon sisteminden 1200×630 benzersiz bir paylaşım (OG) görseli üretir; `public/og/` içine yazılır.
+- **`scripts/validate-location-images.ts`** (`npm run images:validate`, her build sonunda) — kayıt
+  sayıları, eksik krediler, aşırı büyük dosyalar, tekrarlanan hero görseli ve geçici/harici URL kullanımı
+  için bir rapor basar.
+- **`/gorsel-kaynaklari/`** — gerçek/AI görsellerin kaynağını, lisansını ve doğrulama durumunu listeleyen
+  sayfa (şu an boş — hiçbir gerçek fotoğraf eklenmedi).
+
+**Gerçek veya AI fotoğraf eklemek için:** `src/assets/locations/provinces/<il-slug>/hero-real.jpg` (veya
+`hero-ai.jpg`) yoluna dosyayı koyun, `locationImageOverrides.ts`'te ilgili `credit` (gerçek fotoğraf) veya
+`aiMetadata` (AI görsel) alanını doldurun, `npm run images:validate` ile doğrulayın.
 
 ## Yeni İçerik Ekleme
 
@@ -236,9 +281,11 @@ Kalan kapsam genişletmeleri:
 2. **Posta kodları / mahalleler / köyler** — `postalCodes.ts` ve `neighborhoods.ts` hâlâ Kadıköy'ün 21
    mahallesiyle sınırlı örnek veridir; PTT'nin resmi veri setiyle 973 ilçe / 32.000+ mahalle / 18.000+ köy
    kapsamına genişletilmesi ayrı bir çalışma gerektirir.
-3. **Görseller** — `SceneArt.astro` ile üretilen soyut illüstrasyonların yerine lisanslı/özgün fotoğraflar
-   `public/images/provinces/` ve `public/images/districts/` altına eklenip `heroImage` alanları
-   güncellenerek kullanılabilir.
+3. **Görseller** — altyapı hazır (bkz. [Görsel Sistemi](#görsel-sistemi)); bu ortamda Wikimedia Commons ve
+   benzeri kaynaklara erişim olmadığı için 81 il + 973 ilçenin tamamı hâlâ premium stilize illüstrasyon veya
+   geçici (fallback) katmanında. `content/image-generation-prompts.json` içindeki hazır promptlarla üretilen
+   veya lisanslı gerçek fotoğraflar `src/assets/locations/**/hero-{real,ai}.*` yoluna eklenip
+   `locationImageOverrides.ts`'te kredilendirilerek devreye alınabilir.
 4. **Veri tazeleme** — TÜİK her yıl şubat ayında bir önceki yılın ADNKS sonuçlarını yayınlar; `provinces.ts`
    / `districts.ts` bu yayınlarla birlikte yeniden derlenmelidir.
 

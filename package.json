@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
+    "prebuild": "npm run og:generate",
+    "build": "astro check && astro build && npm run images:validate",
     "preview": "astro preview",
     "check": "astro check",
     "format": "prettier --write .",
-    "astro": "astro"
+    "astro": "astro",
+    "og:generate": "tsx scripts/generate-og-images.ts",
+    "prompts:generate": "tsx scripts/generate-image-prompts.ts",
+    "images:validate": "tsx scripts/validate-location-images.ts"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
@@ -24,6 +28,7 @@
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.5",
     "typescript": "^5.9.3"
   }
 }

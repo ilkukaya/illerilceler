@@ -1,6 +1,7 @@
 ---
-import SceneArt from "@/components/geography/SceneArt.astro";
+import LocationThumb from "@/components/geography/LocationThumb.astro";
 import { formatNumber } from "@/utils/format";
+import { getDistrictImage } from "@/generated/locationImageManifest";
 import type { District } from "@/types";
 
 interface Props {
@@ -9,8 +10,7 @@ interface Props {
 }
 
 const { district, provinceSlug } = Astro.props;
-const hues = ["blue", "purple", "teal", "sunset", "green"] as const;
-const hue = hues[district.slug.charCodeAt(0) % hues.length];
+const image = getDistrictImage(district.id)!;
 ---
 
 <a
@@ -18,7 +18,7 @@ const hue = hues[district.slug.charCodeAt(0) % hues.length];
   class="card card-hover group flex flex-col overflow-hidden"
 >
   <div class="relative h-24 w-full overflow-hidden">
-    <SceneArt seed={district.slug} hue={hue} class="h-full w-full" />
+    <LocationThumb image={image} class="h-full w-full" />
     <span
       class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent px-3.5 pb-2 pt-5 text-base font-extrabold text-white"
     >
