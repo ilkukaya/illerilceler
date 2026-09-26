@@ -1,98 +1,26 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
-import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import { provinces } from "@/data/provinces";
-import { getRegion } from "@/data/regions";
+import ProvinceRanking from "@/components/content/ProvinceRanking.astro";
 import { formatNumber } from "@/utils/format";
+import { provincesByPopulation as r, TOTAL_POPULATION, POPULATION_YEAR } from "@/utils/rankings";
+import { copula, possessive } from "@/utils/turkish";
 
-const path = "/istatistikler/en-kalabalik-iller/";
-const ranked = [...provinces].sort(
-  (a, b) => (b.population ?? 0) - (a.population ?? 0),
-);
-
+const top5 = r.slice(0, 5).reduce((s, p) => s + (p.population ?? 0), 0);
+const last = r[r.length - 1];
+const intro = `TÜİK ${POPULATION_YEAR} verilerine göre Türkiye'nin en kalabalık ili ${formatNumber(r[0].population!)} kişiyle ${copula(r[0].name)}. Onu ${r[1].name} (${formatNumber(r[1].population!)}) ve ${r[2].name} (${formatNumber(r[2].population!)}) izler. Ülke nüfusunun ${possessive(`%${Math.round((top5 / TOTAL_POPULATION) * 100)}`)} bu beş ilde yaşar. En az nüfuslu il ise ${formatNumber(last.population!)} kişiyle ${copula(last.name)}.`;
 const faqs = [
-  {
-    question: "Türkiye'nin en kalabalık ili hangisidir?",
-    answer: `${ranked[0]?.name}, ${formatNumber(ranked[0]?.population)} nüfusuyla Türkiye'nin en kalabalık ilidir.`,
-  },
-  {
-    question: "Türkiye'nin en az nüfuslu ili hangisidir?",
-    answer: `${ranked[ranked.length - 1]?.name}, Türkiye'nin en az nüfuslu ilidir.`,
-  },
+  { question: "Türkiye'nin en kalabalık ili hangisidir?", answer: `${formatNumber(r[0].population!)} kişiyle ${copula(r[0].name)}.` },
+  { question: "Türkiye'nin en kalabalık 5 ili hangileridir?", answer: `${r.slice(0, 5).map((p) => `${p.name} (${formatNumber(p.population!)})`).join(", ")}.` },
+  { question: "Türkiye'nin en az nüfuslu ili hangisidir?", answer: `${formatNumber(last.population!)} kişiyle ${copula(last.name)}.` },
+  { question: "Türkiye'nin toplam nüfusu kaçtır?", answer: `TÜİK ${POPULATION_YEAR} sonuçlarına göre ${formatNumber(TOTAL_POPULATION)} kişidir.` },
 ];
 ---
 
-<BaseLayout
-  title="Nüfusa Göre En Kalabalık İller — Türkiye İl Sıralaması"
-  description="Türkiye'deki 81 ilin nüfusa göre sıralı listesi."
-  path={path}
->
-  <PageContainer class="py-4">
-    <Breadcrumbs
-      items={[
-        { label: "İstatistikler", href: "/istatistikler/" },
-        { label: "En Kalabalık İller", href: path },
-      ]}
-    />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Nüfusa Göre En Kalabalık İller
-    </h1>
-    <div
-      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-    >
-      <p class="text-base font-semibold text-text-primary">
-        <strong>
-          {ranked[0]?.name}, {formatNumber(ranked[0]?.population)} kişilik nüfusuyla
-          Türkiye'nin en kalabalık ilidir.
-        </strong>
-      </p>
-    </div>
-
-    <div class="mt-8 overflow-hidden rounded-2xl border border-border">
-      <table class="w-full text-sm">
-        <thead>
-          <tr
-            class="bg-surface-muted text-left text-xs font-bold uppercase tracking-wide text-text-muted"
-          >
-            <th class="px-4 py-3">#</th>
-            <th class="px-4 py-3">İl</th>
-            <th class="px-4 py-3">Bölge</th>
-            <th class="px-4 py-3 text-right">Nüfus (2024)</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          {
-            ranked.map((p, i) => (
-              <tr class="bg-surface hover:bg-surface-muted">
-                <td class="px-4 py-3 font-bold text-text-muted">{i + 1}</td>
-                <td class="px-4 py-3">
-                  <a
-                    href={`/iller/${p.slug}/`}
-                    class="font-semibold text-text-primary hover:text-brand-primary"
-                  >
-                    {p.name}
-                  </a>
-                </td>
-                <td class="px-4 py-3 text-text-secondary">
-                  {getRegion(p.region)?.name.replace(" Bölgesi", "")}
-                </td>
-                <td class="px-4 py-3 text-right font-bold text-text-primary">
-                  {formatNumber(p.population)}
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <div class="mt-12">
-      <FAQAccordion faqs={faqs} />
-    </div>
-  </PageContainer>
-</BaseLayout>
+<ProvinceRanking
+  metric="population"
+  path="/istatistikler/en-kalabalik-iller/"
+  title={`Türkiye'nin En Kalabalık İlleri ${POPULATION_YEAR} — 81 İl Nüfus Sıralaması`}
+  h1="Nüfusa göre iller"
+  description={`81 ilin TÜİK ${POPULATION_YEAR} nüfusuna göre sıralaması: en kalabalık il ${r[0].name}, en az nüfuslu il ${last.name}. Harita, yoğunluk ve tam tablo.`}
+  intro={intro}
+  faqs={faqs}
+/>

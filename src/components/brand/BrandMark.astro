@@ -1,22 +1,22 @@
 ---
-import Icon from "@/components/Icon.astro";
-
+/** Brand mark: a red tile with a white location ring — reads at 16px favicons too. */
 interface Props {
   size?: number;
   class?: string;
 }
 
-const { size = 36, class: className = "" } = Astro.props;
+const { size = 28, class: className = "" } = Astro.props;
 ---
 
-<span
-  class={`relative inline-flex shrink-0 items-center justify-center rounded-[30%] shadow-sm ${className}`}
-  style={`width:${size}px;height:${size}px;background:linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));`}
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 32 32"
+  class={`shrink-0 ${className}`}
+  aria-hidden="true"
 >
-  <Icon
-    name="map-pin"
-    size={Math.round(size * 0.56)}
-    class="text-white"
-    strokeWidth={2.25}
-  />
-</span>
+  <rect width="32" height="32" rx="7" fill="var(--brand-primary)"></rect>
+  <circle cx="16" cy="16" r="7.5" fill="none" stroke="#fff" stroke-width="3"
+  ></circle>
+  <circle cx="16" cy="16" r="2.6" fill="#fff"></circle>
+</svg>

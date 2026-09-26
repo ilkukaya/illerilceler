@@ -1,0 +1,74 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import { siteConfig } from "@/config/site";
+import { POPULATION_YEAR } from "@/utils/rankings";
+import { organizationSchema, webPageSchema } from "@/utils/seo";
+
+const path = "/hakkimizda/";
+const title = "Hakkımızda";
+const description =
+  "İller İlçeler, Türkiye'nin 81 ili ve 973 ilçesi hakkında resmî verilere dayanan bağımsız bir bilgi rehberidir. Veri kaynaklarımız ve yayın ilkelerimiz.";
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  schema={[
+    { ...webPageSchema({ name: title, path, description }), "@type": "AboutPage" },
+    organizationSchema(),
+  ]}
+>
+  <div class="container-page max-w-3xl pt-4 sm:pt-6">
+    <Breadcrumbs items={[{ label: "Hakkımızda", href: path }]} />
+    <h1 class="mt-5 text-4xl leading-[1.1] sm:text-5xl">Hakkımızda</h1>
+    <div class="prose-content mt-6 text-[17px]">
+      <p>
+        <strong>{siteConfig.name}</strong>, Türkiye'nin 81 ili ve 973 ilçesi
+        hakkında aranan temel bilgileri — nüfus, yüzölçümü, plaka ve telefon
+        alan kodu, komşu iller, mesafeler — tek yerde, hızlı ve doğru biçimde
+        sunmak için hazırlanan bağımsız bir bilgi rehberidir. Öğrenciler,
+        öğretmenler, yolculuk planlayanlar, taşınmayı düşünenler ve merak eden
+        herkes için tasarlandı.
+      </p>
+
+      <h2 class="mt-10 text-2xl text-text-primary">Verilerimiz nereden geliyor?</h2>
+      <p>
+        Nüfus rakamları Türkiye İstatistik Kurumu'nun (TÜİK) Adrese Dayalı
+        Nüfus Kayıt Sistemi {POPULATION_YEAR} sonuçlarıdır. Yüzölçümü ve rakım
+        Harita Genel Müdürlüğü'nden, telefon alan kodları Türk Telekom
+        kayıtlarından alınır. İl sınırları ve komşuluklar harita geometrisinden
+        hesaplanır; mesafeler il merkezlerinin koordinatları arasındaki büyük
+        daire (Haversine) formülüyle bulunur.
+      </p>
+      <p>
+        Sitedeki sıralamalar, yoğunluk değerleri ve karşılaştırmalar bu
+        verilerden otomatik olarak türetilir; böylece bir sayfadaki cümle ile
+        aynı sayfadaki tablo hiçbir zaman birbiriyle çelişmez. Tahmine dayalı
+        değerler (ör. karayolu mesafesi ve sürüş süresi) her zaman
+        <em>tahmini</em> olarak işaretlenir.
+      </p>
+
+      <h2 class="mt-10 text-2xl text-text-primary">Yayın ilkelerimiz</h2>
+      <ul class="list-disc space-y-2 pl-5">
+        <li>Rakamları kaynağıyla ve yılıyla birlikte veririz.</li>
+        <li>Doğrulayamadığımız bilgiyi yayınlamayız; tahminleri açıkça belirtiriz.</li>
+        <li>Her yeni TÜİK yayınında tüm il ve ilçe sayfalarını güncelleriz.</li>
+        <li>
+          Reklam ve iş ortaklığı bağlantıları içerikten ayrı ve etiketli
+          gösterilir; editoryal içeriği etkilemez.
+        </li>
+      </ul>
+
+      <h2 class="mt-10 text-2xl text-text-primary">Hata mı gördünüz?</h2>
+      <p>
+        Bir bilginin eksik ya da hatalı olduğunu düşünüyorsanız lütfen
+        <a href="/iletisim/">iletişim sayfasından</a> ya da
+        <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
+        adresinden bize yazın. Düzeltmeleri kaynağını kontrol ettikten sonra
+        yayınlarız.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

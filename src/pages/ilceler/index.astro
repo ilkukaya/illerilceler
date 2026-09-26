@@ -1,89 +1,86 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import SectionHeader from "@/components/layout/SectionHeader.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import Icon from "@/components/Icon.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
 import { provinces } from "@/data/provinces";
-import { totalDistrictCount } from "@/data/provinces";
+import { districts, getDistrictsForProvince } from "@/data/districts";
+import { POPULATION_YEAR, provincesByDistrictCount, districtsByPopulation } from "@/utils/rankings";
+import { formatNumber } from "@/utils/format";
+import { provincePath, districtPath, districtListPath } from "@/utils/links";
+import { webPageSchema, faqPageSchema } from "@/utils/seo";
+import { copula } from "@/utils/turkish";
 
 const path = "/ilceler/";
-const sorted = [...provinces].sort((a, b) =>
-  a.name.localeCompare(b.name, "tr"),
-);
-
+const sorted = [...provinces].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const top = provincesByDistrictCount[0];
 const faqs = [
-  {
-    question: "Türkiye'de kaç ilçe vardır?",
-    answer: `Türkiye'de 81 ile bağlı toplam ${totalDistrictCount} ilçe bulunmaktadır.`,
-  },
-  {
-    question: "En çok ilçesi olan il hangisidir?",
-    answer: "İstanbul 39 ilçe ile Türkiye'nin en çok ilçeye sahip ilidir.",
-  },
-  {
-    question: "Bir ilçenin bağlı olduğu ili nasıl bulabilirim?",
-    answer:
-      "Arama kutusuna ilçe adını yazarak veya ilin sayfasındaki ilçeler listesinden bulabilirsiniz.",
-  },
+  { question: "Türkiye'de kaç ilçe vardır?", answer: `Türkiye'de 81 ile bağlı toplam ${districts.length} ilçe bulunur.` },
+  { question: "En çok ilçesi olan il hangisidir?", answer: `${top.districtCount} ilçeyle ${top.name}.` },
+  { question: "Türkiye'nin en kalabalık ilçesi hangisidir?", answer: `TÜİK ${POPULATION_YEAR} verilerine göre ${formatNumber(districtsByPopulation[0].population!)} kişiyle ${districtsByPopulation[0].name}.` },
+  { question: "Bir ilçenin hangi ile bağlı olduğunu nasıl bulurum?", answer: "Sayfanın üstündeki arama kutusuna ilçe adını yazın ya da bu sayfada tarayıcınızın sayfa içi arama özelliğini (Ctrl/Cmd + F) kullanın." },
 ];
+const title = `Türkiye'nin ${districts.length} İlçesi — İllere Göre İlçe Listesi (${POPULATION_YEAR})`;
+const description = `Türkiye'deki ${districts.length} ilçenin illere göre tam listesi. Her ilçenin nüfus, yüzölçümü ve mahalle bilgisine tek tıkla ulaşın.`;
 ---
 
 <BaseLayout
-  title="Türkiye'nin İlçeleri — İllere Göre İlçe Listesi"
-  description={`Türkiye'deki ${totalDistrictCount} ilçeyi illere göre keşfedin. Her ilin ilçe listesine, nüfus ve mahalle bilgilerine ulaşın.`}
+  title={title}
+  description={description}
   path={path}
+  schema={[webPageSchema({ name: title, path, description }), faqPageSchema(faqs)]}
 >
-  <PageContainer class="py-4">
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs items={[{ label: "İlçeler", href: path }]} />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Türkiye'nin İlçeleri
-    </h1>
-    <div
-      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-    >
-      <p class="text-base font-semibold text-text-primary">
-        <strong
-          >Türkiye'de 81 ile bağlı toplam {totalDistrictCount} ilçe bulunur.</strong
-        > İlçeleri görüntülemek için aşağıdan bir il seçin.
+    <header class="mt-5 max-w-3xl">
+      <p class="section-eyebrow">{districts.length} ilçe · 81 il</p>
+      <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">Türkiye'nin ilçeleri</h1>
+      <p class="answer-box mt-6">
+        Türkiye'de {districts.length} ilçe vardır. En çok ilçesi olan il {top.districtCount} ilçeyle
+        {" "}{copula(top.name)}. Aşağıda tüm ilçeler bağlı oldukları ile göre alfabetik olarak listelenmiştir.
+        <a href="/istatistikler/en-kalabalik-ilceler/" class="link">Nüfusa göre sıralı liste →</a>
       </p>
+    </header>
+
+    <nav class="mt-8 flex flex-wrap gap-1.5 text-sm" aria-label="İl atlama">
+      {sorted.map((p) => (
+        <a href={`#il-${p.slug}`} class="rounded px-1.5 py-0.5 text-text-secondary hover:bg-surface-muted hover:text-text-primary">
+          {p.name}
+        </a>
+      ))}
+    </nav>
+
+    <AdSlot variant="leaderboard" />
+
+    <div class="mt-8 columns-1 gap-8 sm:columns-2 lg:columns-3">
+      {
+        sorted.map((p) => {
+          const ds = [...getDistrictsForProvince(p.slug)].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+          return (
+            <section id={`il-${p.slug}`} class="mb-8 break-inside-avoid scroll-mt-24">
+              <h2 class="flex items-baseline justify-between gap-3 border-b border-border-strong pb-1.5 font-sans text-base font-semibold">
+                <a href={provincePath(p.slug)} class="hover:text-brand-primary">
+                  <span class="tabular mr-1.5 text-brand-primary">{p.plateCode}</span>{p.name}
+                </a>
+                <a href={districtListPath(p.slug)} class="text-xs font-normal text-text-muted hover:text-text-primary">
+                  {ds.length} ilçe
+                </a>
+              </h2>
+              <ul class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[15px]">
+                {ds.map((d) => (
+                  <li>
+                    <a href={districtPath(p.slug, d.slug)} class="text-text-secondary hover:text-text-primary hover:underline">
+                      {d.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
+      }
     </div>
 
-    <section class="mt-10" aria-labelledby="tum-iller-heading">
-      <SectionHeader
-        as="h2"
-        id="tum-iller-heading"
-        title="Tüm İllere Göre Gözat"
-        description="Her ilin tüm ilçelerinin nüfus, mahalle sayısı ve daha fazla bilgisine ulaşmak için ili seçin."
-      />
-      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {
-          sorted.map((p) => (
-            <a
-              href={`/iller/${p.slug}/ilceler/`}
-              class="card card-hover flex items-center justify-between gap-2 p-4"
-            >
-              <span>
-                <span class="block text-sm font-bold text-text-primary">
-                  {p.name}
-                </span>
-                <span class="block text-xs text-text-muted">
-                  {p.districtCount} ilçe
-                </span>
-              </span>
-              <Icon name="arrow-right" size={16} class="text-text-muted" />
-            </a>
-          ))
-        }
-      </div>
-    </section>
-
-    <div class="mt-12">
-      <FAQAccordion faqs={faqs} />
-    </div>
-  </PageContainer>
+    <div class="mt-8 max-w-3xl"><FAQAccordion faqs={faqs} /></div>
+  </div>
 </BaseLayout>

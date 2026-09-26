@@ -81,8 +81,16 @@ export function organizationSchema() {
     "@type": "Organization",
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: absoluteUrl("/icons/logo.svg"),
-    sameAs: Object.values(siteConfig.social),
+    logo: {
+      "@type": "ImageObject",
+      url: absoluteUrl("/icons/icon-512.png"),
+      width: 512,
+      height: 512,
+    },
+    email: siteConfig.contactEmail,
+    ...(Object.keys(siteConfig.social).length
+      ? { sameAs: Object.values(siteConfig.social) }
+      : {}),
   };
 }
 
@@ -91,21 +99,52 @@ export function administrativeAreaSchema(params: {
   path: string;
   description: string;
   containedIn?: string;
+  containedInPath?: string;
   latitude?: number;
   longitude?: number;
+  population?: number;
+  populationYear?: number;
+  areaKm2?: number;
+  plateCode?: string;
+  areaCodes?: string[];
+  image?: string;
 }) {
+  const extra: Record<string, unknown>[] = [];
+  if (params.population)
+    extra.push({
+      "@type": "PropertyValue",
+      name: "Nüfus",
+      value: params.population,
+      ...(params.populationYear ? { description: `TÜİK ADNKS ${params.populationYear}` } : {}),
+    });
+  if (params.areaKm2)
+    extra.push({ "@type": "PropertyValue", name: "Yüzölçümü", value: params.areaKm2, unitText: "km²" });
+  if (params.plateCode)
+    extra.push({ "@type": "PropertyValue", name: "Plaka kodu", value: params.plateCode });
+  if (params.areaCodes?.length)
+    extra.push({
+      "@type": "PropertyValue",
+      name: "Telefon alan kodu",
+      value: params.areaCodes.map((c) => `0${c}`).join(", "),
+    });
   return {
     "@context": "https://schema.org",
     "@type": "AdministrativeArea",
+    "@id": `${absoluteUrl(params.path)}#place`,
     name: params.name,
     description: params.description,
     url: absoluteUrl(params.path),
+    ...(params.image ? { image: absoluteUrl(params.image) } : {}),
+    ...(extra.length ? { additionalProperty: extra } : {}),
     ...(params.containedIn
       ? {
-          containedInPlace: {
-            "@type": "AdministrativeArea",
-            name: params.containedIn,
-          },
+          containedInPlace: params.containedInPath
+            ? {
+                "@type": "AdministrativeArea",
+                name: params.containedIn,
+                url: absoluteUrl(params.containedInPath),
+              }
+            : { "@type": "Country", name: params.containedIn },
         }
       : {}),
     ...(params.latitude && params.longitude
@@ -124,6 +163,8 @@ export function webPageSchema(params: {
   name: string;
   path: string;
   description: string;
+  modified?: string;
+  aboutId?: string;
 }) {
   return {
     "@context": "https://schema.org",
@@ -132,6 +173,9 @@ export function webPageSchema(params: {
     description: params.description,
     url: absoluteUrl(params.path),
     inLanguage: siteConfig.language,
+    ...(params.modified ? { dateModified: params.modified } : {}),
+    ...(params.aboutId ? { about: { "@id": params.aboutId } } : {}),
+    publisher: { "@type": "Organization", name: siteConfig.name, url: siteConfig.url },
     isPartOf: {
       "@type": "WebSite",
       name: siteConfig.name,

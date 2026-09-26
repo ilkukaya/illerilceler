@@ -1,98 +1,24 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
-import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import { provinces } from "@/data/provinces";
-import { getRegion } from "@/data/regions";
+import ProvinceRanking from "@/components/content/ProvinceRanking.astro";
 import { formatNumber } from "@/utils/format";
+import { provincesByArea as r, TOTAL_AREA } from "@/utils/rankings";
+import { copula, possessive } from "@/utils/turkish";
 
-const path = "/istatistikler/yuzolcumune-gore-en-buyuk-iller/";
-const ranked = [...provinces].sort(
-  (a, b) => (b.areaKm2 ?? 0) - (a.areaKm2 ?? 0),
-);
-
+const last = r[r.length - 1];
+const intro = `Yüzölçümü en büyük il ${formatNumber(r[0].areaKm2!)} km² ile ${copula(r[0].name)}; ülke topraklarının yaklaşık ${possessive(`%${((r[0].areaKm2! / TOTAL_AREA) * 100).toFixed(1).replace(".", ",")}`)} bu ilin sınırları içindedir. Onu ${r[1].name} (${formatNumber(r[1].areaKm2!)} km²) ve ${r[2].name} (${formatNumber(r[2].areaKm2!)} km²) izler. En küçük il ise ${formatNumber(last.areaKm2!)} km² ile ${copula(last.name)}.`;
 const faqs = [
-  {
-    question: "Türkiye'nin yüzölçümü bakımından en büyük ili hangisidir?",
-    answer: `${ranked[0]?.name}, ${formatNumber(ranked[0]?.areaKm2)} km² ile Türkiye'nin yüzölçümü bakımından en büyük ilidir.`,
-  },
-  {
-    question: "Türkiye'nin yüzölçümü bakımından en küçük ili hangisidir?",
-    answer: `${ranked[ranked.length - 1]?.name}, Türkiye'nin yüzölçümü bakımından en küçük ilidir.`,
-  },
+  { question: "Türkiye'nin yüzölçümü en büyük ili hangisidir?", answer: `${formatNumber(r[0].areaKm2!)} km² ile ${copula(r[0].name)}.` },
+  { question: "Türkiye'nin en küçük ili hangisidir?", answer: `Yüzölçümü bakımından en küçük il ${formatNumber(last.areaKm2!)} km² ile ${copula(last.name)}.` },
+  { question: "Yüzölçümü en büyük 5 il hangileridir?", answer: `${r.slice(0, 5).map((p) => `${p.name} (${formatNumber(p.areaKm2!)} km²)`).join(", ")}.` },
 ];
 ---
 
-<BaseLayout
-  title="Yüzölçümüne Göre En Büyük İller — Türkiye İl Sıralaması"
-  description="Türkiye'deki 81 ilin yüzölçümüne göre sıralı listesi."
-  path={path}
->
-  <PageContainer class="py-4">
-    <Breadcrumbs
-      items={[
-        { label: "İstatistikler", href: "/istatistikler/" },
-        { label: "Yüzölçümüne Göre En Büyük İller", href: path },
-      ]}
-    />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Yüzölçümüne Göre En Büyük İller
-    </h1>
-    <div
-      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-    >
-      <p class="text-base font-semibold text-text-primary">
-        <strong>
-          {ranked[0]?.name}, {formatNumber(ranked[0]?.areaKm2)} km² yüzölçümüyle Türkiye'nin
-          en büyük ilidir.
-        </strong>
-      </p>
-    </div>
-
-    <div class="mt-8 overflow-hidden rounded-2xl border border-border">
-      <table class="w-full text-sm">
-        <thead>
-          <tr
-            class="bg-surface-muted text-left text-xs font-bold uppercase tracking-wide text-text-muted"
-          >
-            <th class="px-4 py-3">#</th>
-            <th class="px-4 py-3">İl</th>
-            <th class="px-4 py-3">Bölge</th>
-            <th class="px-4 py-3 text-right">Yüzölçümü</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          {
-            ranked.map((p, i) => (
-              <tr class="bg-surface hover:bg-surface-muted">
-                <td class="px-4 py-3 font-bold text-text-muted">{i + 1}</td>
-                <td class="px-4 py-3">
-                  <a
-                    href={`/iller/${p.slug}/`}
-                    class="font-semibold text-text-primary hover:text-brand-primary"
-                  >
-                    {p.name}
-                  </a>
-                </td>
-                <td class="px-4 py-3 text-text-secondary">
-                  {getRegion(p.region)?.name.replace(" Bölgesi", "")}
-                </td>
-                <td class="px-4 py-3 text-right font-bold text-text-primary">
-                  {formatNumber(p.areaKm2)} km²
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <div class="mt-12">
-      <FAQAccordion faqs={faqs} />
-    </div>
-  </PageContainer>
-</BaseLayout>
+<ProvinceRanking
+  metric="area"
+  path="/istatistikler/yuzolcumune-gore-en-buyuk-iller/"
+  title="Yüzölçümüne Göre İller — Türkiye'nin En Büyük ve En Küçük İlleri"
+  h1="Yüzölçümüne göre iller"
+  description={`81 ilin yüzölçümü sıralaması: en büyük il ${r[0].name} (${formatNumber(r[0].areaKm2!)} km²), en küçük il ${last.name}. Tam tablo ve harita.`}
+  intro={intro}
+  faqs={faqs}
+/>

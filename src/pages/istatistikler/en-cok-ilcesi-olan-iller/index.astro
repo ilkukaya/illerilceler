@@ -1,0 +1,24 @@
+---
+import ProvinceRanking from "@/components/content/ProvinceRanking.astro";
+import { provincesByDistrictCount as r } from "@/utils/rankings";
+import { districts } from "@/data/districts";
+
+const minCount = r[r.length - 1].districtCount ?? 0;
+const fewest = r.filter((p) => p.districtCount === minCount).map((p) => p.name);
+const intro = `Türkiye'de toplam ${districts.length} ilçe vardır. En çok ilçesi olan il ${r[0].districtCount} ilçeyle ${r[0].name}; onu ${r[1].name} (${r[1].districtCount}) ve ${r[2].name} (${r[2].districtCount}) izler. En az ilçeye sahip ${fewest.length > 1 ? "iller" : "il"} (${minCount} ilçe): ${fewest.join(", ")}.`;
+const faqs = [
+  { question: "En çok ilçesi olan il hangisidir?", answer: `${r[0].districtCount} ilçeyle ${r[0].name}.` },
+  { question: "En az ilçesi olan il hangisidir?", answer: `${minCount} ilçeyle ${fewest.join(", ")}.` },
+  { question: "Türkiye'de kaç ilçe vardır?", answer: `Türkiye'de ${districts.length} ilçe vardır.` },
+];
+---
+
+<ProvinceRanking
+  metric="districts"
+  path="/istatistikler/en-cok-ilcesi-olan-iller/"
+  title="En Çok İlçesi Olan İller — İllerin İlçe Sayıları Listesi"
+  h1="İlçe sayısına göre iller"
+  description={`81 ilin ilçe sayısı sıralaması. En çok ilçesi olan il ${r[0].name} (${r[0].districtCount}). Türkiye'de toplam ${districts.length} ilçe var.`}
+  intro={intro}
+  faqs={faqs}
+/>

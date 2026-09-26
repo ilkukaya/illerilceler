@@ -1,0 +1,243 @@
+---
+/**
+ * Interactive map of all 81 provinces (real outlines). Every province is a
+ * real <a> link, so the map is also crawlable navigation. Colouring modes
+ * (region / population / density) are switched client-side by flipping a
+ * data attribute — each path carries its colours as CSS custom properties.
+ */
+import { MAP_VIEWBOX, provinceShapeBySlug } from "@/data/turkeyMap";
+import { provinces } from "@/data/provinces";
+import { regions, getRegion } from "@/data/regions";
+import { populationClass, densityClass, density } from "@/utils/rankings";
+import { formatNumber } from "@/utils/format";
+
+interface Props {
+  mode?: "region" | "population" | "density";
+  controls?: boolean;
+  labels?: boolean;
+  highlight?: string;
+  class?: string;
+  id?: string;
+}
+
+const {
+  mode = "region",
+  controls = true,
+  labels = false,
+  highlight,
+  class: className = "",
+  id = "tr-map",
+} = Astro.props;
+
+const items = provinces
+  .map((p) => {
+    const shape = provinceShapeBySlug[p.slug];
+    if (!shape) return null;
+    const region = getRegion(p.region);
+    return {
+      p,
+      shape,
+      regionName: region?.name ?? "",
+      regionColor: region?.color ?? "#999",
+      popClass: populationClass(p),
+      denClass: densityClass(p),
+      dens: density(p.population, p.areaKm2),
+    };
+  })
+  .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+const modes = [
+  { key: "region", label: "Bölgeler" },
+  { key: "population", label: "Nüfus" },
+  { key: "density", label: "Nüfus yoğunluğu" },
+] as const;
+---
+
+<figure class={`pmap ${className}`} data-mode={mode} id={id}>
+  {
+    controls && (
+      <div
+        class="mb-3 flex flex-wrap items-center gap-1.5"
+        role="group"
+        aria-label="Harita renklendirmesi"
+      >
+        {modes.map((m) => (
+          <button
+            type="button"
+            class="pmap-mode"
+            data-mode-btn={m.key}
+            aria-pressed={m.key === mode ? "true" : "false"}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+  <div class="relative">
+    <svg
+      viewBox={MAP_VIEWBOX}
+      class="block h-auto w-full"
+      role="group"
+      aria-label="Türkiye il haritası — bir ile tıklayarak sayfasına gidin"
+    >
+      {
+        items.map((it) => (
+          <a
+            href={`/iller/${it.p.slug}/`}
+            aria-label={`${it.p.name} (plaka ${it.p.plateCode})`}
+            data-name={it.p.name}
+            data-plate={it.p.plateCode}
+            data-region={it.regionName}
+            data-pop={it.p.population ? formatNumber(it.p.population) : ""}
+            data-dens={it.dens ? formatNumber(Math.round(it.dens)) : ""}
+          >
+            <path
+              d={it.shape.d}
+              class:list={["pmap-p", it.p.slug === highlight && "is-hl"]}
+              style={`--c-region:${it.regionColor};--c-pop:var(--data-${it.popClass});--c-den:var(--data-${it.denClass})`}
+            />
+          </a>
+        ))
+      }
+      {
+        labels &&
+          items.map((it) => (
+            <text
+              x={it.shape.cx}
+              y={it.shape.cy}
+              class="pmap-label"
+              text-anchor="middle"
+              dominant-baseline="central"
+            >
+              {it.p.plateCode}
+            </text>
+          ))
+      }
+    </svg>
+    <div class="pmap-tip" hidden></div>
+  </div>
+  <figcaption class="mt-3 text-xs text-text-muted">
+    <div class="pmap-legend pmap-legend--region flex flex-wrap gap-x-4 gap-y-1.5">
+      {
+        regions.map((r) => (
+          <span class="inline-flex items-center gap-1.5">
+            <span
+              class="h-2.5 w-2.5 rounded-sm"
+              style={`background:${r.color}`}
+            />
+            {r.name.replace(" Bölgesi", "")}
+          </span>
+        ))
+      }
+    </div>
+    <div class="pmap-legend pmap-legend--scale items-center gap-2">
+      <span>Düşük</span>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span class="h-2.5 w-6 rounded-sm" style={`background:var(--data-${n})`} />
+      ))}
+      <span>Yüksek</span>
+      <span class="ml-2">(81 il, beşte birlik dilimler)</span>
+    </div>
+  </figcaption>
+</figure>
+
+<style>
+  .pmap-p {
+    stroke: var(--map-stroke);
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+    transition: fill 0.12s ease;
+    fill: color-mix(in srgb, var(--c-region) 78%, var(--surface));
+  }
+  .pmap[data-mode="population"] .pmap-p {
+    fill: var(--c-pop);
+  }
+  .pmap[data-mode="density"] .pmap-p {
+    fill: var(--c-den);
+  }
+  .pmap a:hover .pmap-p,
+  .pmap a:focus-visible .pmap-p,
+  .pmap .pmap-p.is-hl {
+    fill: var(--brand-primary);
+  }
+  .pmap a:focus-visible {
+    outline: none;
+  }
+  .pmap-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    fill: #fff;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: rgb(0 0 0 / 0.35);
+    stroke-width: 2px;
+  }
+  .pmap-legend--scale {
+    display: none;
+  }
+  .pmap:not([data-mode="region"]) .pmap-legend--region {
+    display: none;
+  }
+  .pmap:not([data-mode="region"]) .pmap-legend--scale {
+    display: flex;
+  }
+  .pmap-tip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    min-width: 150px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    box-shadow: var(--shadow-popover);
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    transform: translate(-50%, calc(-100% - 12px));
+  }
+  .pmap-tip strong {
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".pmap").forEach((fig) => {
+    const tip = fig.querySelector<HTMLElement>(".pmap-tip");
+    const wrap = tip?.parentElement;
+
+    fig.querySelectorAll<HTMLButtonElement>("[data-mode-btn]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        fig.dataset.mode = btn.dataset.modeBtn;
+        fig
+          .querySelectorAll("[data-mode-btn]")
+          .forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      });
+    });
+
+    if (!tip || !wrap || !window.matchMedia("(hover: hover)").matches) return;
+
+    fig.querySelectorAll<SVGAElement>("svg a").forEach((a) => {
+      a.addEventListener("mouseenter", () => {
+        const d = a.dataset;
+        const mode = fig.dataset.mode;
+        const metric =
+          mode === "density"
+            ? `Yoğunluk: <b>${d.dens} kişi/km²</b>`
+            : `Nüfus: <b>${d.pop}</b>`;
+        tip.innerHTML = `<strong>${d.name}</strong> · ${d.plate}<br>${d.region}<br>${metric}`;
+        tip.hidden = false;
+      });
+      a.addEventListener("mouseleave", () => {
+        tip.hidden = true;
+      });
+      a.addEventListener("mousemove", (e: MouseEvent) => {
+        const r = wrap.getBoundingClientRect();
+        tip.style.left = `${e.clientX - r.left}px`;
+        tip.style.top = `${e.clientY - r.top}px`;
+      });
+    });
+  });
+</script>

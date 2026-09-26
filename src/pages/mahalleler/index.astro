@@ -1,121 +1,70 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import SectionHeader from "@/components/layout/SectionHeader.astro";
+import SortableTable from "@/components/content/SortableTable.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import Icon from "@/components/Icon.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
 import { provinces } from "@/data/provinces";
-import { neighborhoods } from "@/data/neighborhoods";
-import { siteConfig } from "@/config/site";
+import { districts } from "@/data/districts";
+import { formatNumber } from "@/utils/format";
+import { copula } from "@/utils/turkish";
+import { districtListPath, districtPath } from "@/utils/links";
+import { webPageSchema, faqPageSchema } from "@/utils/seo";
 
 const path = "/mahalleler/";
-const sorted = [...provinces].sort((a, b) =>
-  a.name.localeCompare(b.name, "tr"),
-);
-
+const total = provinces.reduce((s, p) => s + (p.neighborhoodCount ?? 0), 0);
+const byCount = [...provinces].sort((a, b) => (b.neighborhoodCount ?? 0) - (a.neighborhoodCount ?? 0));
+const topDistricts = [...districts].sort((a, b) => (b.neighborhoodCount ?? 0) - (a.neighborhoodCount ?? 0)).slice(0, 10);
+const prov = (slug: string) => provinces.find((p) => p.slug === slug)!;
 const faqs = [
-  {
-    question: "Türkiye'de kaç mahalle vardır?",
-    answer: `Türkiye genelinde ${siteConfig.stats.neighborhoods} mahalle ve semt bulunmaktadır.`,
-  },
-  {
-    question: "Mahalle ile semt arasındaki fark nedir?",
-    answer:
-      "Mahalle idari bir birimken, semt günlük dilde kullanılan gayriresmî bir yerleşim adıdır. Bir semt birden fazla mahalleyi kapsayabilir.",
-  },
-  {
-    question: "Bir mahallenin posta kodunu nasıl öğrenebilirim?",
-    answer:
-      "Posta Kodları sayfasından mahalle veya posta kodu adını arayarak öğrenebilirsiniz.",
-  },
+  { question: "Türkiye'de kaç mahalle var?", answer: `İl ve ilçe kayıtlarına göre Türkiye'de toplam ${formatNumber(total)} mahalle bulunur.` },
+  { question: "En çok mahallesi olan il hangisidir?", answer: `${formatNumber(byCount[0].neighborhoodCount ?? 0)} mahalleyle ${copula(byCount[0].name)}.` },
+  { question: "En çok mahallesi olan ilçe hangisidir?", answer: `${topDistricts[0].neighborhoodCount} mahalleyle ${prov(topDistricts[0].provinceSlug).name} iline bağlı ${copula(topDistricts[0].name)}.` },
+  { question: "Mahalle ile köy arasındaki fark nedir?", answer: "Mahalle, belediye sınırları içindeki en küçük yerleşim birimidir. Köy ise belediye sınırları dışında, muhtarlıkla yönetilen kırsal yerleşimdir. 2012'deki büyükşehir düzenlemesiyle büyükşehir illerindeki köyler mahalleye dönüştürülmüştür." },
 ];
+const title = `Türkiye'de Kaç Mahalle Var? İllere Göre Mahalle Sayıları (${formatNumber(total)} Mahalle)`;
+const description = `Türkiye'deki ${formatNumber(total)} mahallenin illere ve ilçelere göre dağılımı. En çok mahallesi olan il ${byCount[0].name}. Sıralanabilir tablo.`;
 ---
 
-<BaseLayout
-  title="Türkiye'nin Mahalleleri — Mahalle ve Semt Rehberi"
-  description={`Türkiye genelinde ${siteConfig.stats.neighborhoods} mahalle ve semt hakkında bilgi edinin. İlçelere göre mahalle listelerine ulaşın.`}
-  path={path}
->
-  <PageContainer class="py-4">
+<BaseLayout title={title} description={description} path={path} schema={[webPageSchema({ name: title, path, description }), faqPageSchema(faqs)]}>
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs items={[{ label: "Mahalleler", href: path }]} />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Türkiye'nin Mahalleleri
-    </h1>
-    <div
-      class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-    >
-      <p class="text-base font-semibold text-text-primary">
-        <strong
-          >Türkiye genelinde {siteConfig.stats.neighborhoods} mahalle ve semt bulunur.</strong
-        > Mahalle bilgilerine ilçe sayfalarından ulaşabilirsiniz.
+    <header class="mt-5 max-w-3xl">
+      <h1 class="text-4xl leading-[1.1] sm:text-5xl">Mahalleler</h1>
+      <p class="answer-box mt-6">
+        Türkiye'de toplam {formatNumber(total)} mahalle vardır. En çok mahallesi olan il
+        {" "}{formatNumber(byCount[0].neighborhoodCount ?? 0)} mahalleyle {copula(byCount[0].name)}. Her ilçenin mahalle
+        sayısı ilçe sayfasında yer alır.
       </p>
-    </div>
-
-    <section class="mt-10" aria-labelledby="ornek-heading">
-      <SectionHeader
-        as="h2"
-        id="ornek-heading"
-        eyebrow="Örnek"
-        title="Kadıköy Mahalleleri"
-        description="Detaylı mahalle verisi bulunan örnek ilçe."
-        href="/iller/istanbul/kadikoy/"
-        linkLabel="Tüm Mahalleleri Gör"
-      />
-      <div class="mt-5 flex flex-wrap gap-2">
-        {
-          neighborhoods.map((n) => (
-            <a href={`/posta-kodlari/${n.postalCode}/`} class="pill">
-              {n.name}
-            </a>
-          ))
-        }
-      </div>
+    </header>
+    <SortableTable
+      class="mt-8"
+      id="mahalle-tablosu"
+      rank
+      caption="İllere göre mahalle sayıları"
+      columns={[
+        { key: "il", label: "İl" },
+        { key: "mahalle", label: "Mahalle", numeric: true },
+        { key: "ilce", label: "İlçe", numeric: true },
+      ]}
+      rows={byCount.map((p) => ({
+        il: { text: p.name, sort: p.name, href: districtListPath(p.slug) },
+        mahalle: { text: formatNumber(p.neighborhoodCount ?? 0), sort: p.neighborhoodCount ?? 0 },
+        ilce: { text: String(p.districtCount ?? "—"), sort: p.districtCount ?? 0 },
+      }))}
+    />
+    <AdSlot variant="leaderboard" />
+    <section class="mt-12">
+      <h2 class="text-2xl">En çok mahallesi olan ilçeler</h2>
+      <ol class="mt-4 grid gap-x-8 sm:grid-cols-2">
+        {topDistricts.map((d, i) => (
+          <li class="flex justify-between gap-3 border-b border-border py-2 text-sm">
+            <a href={districtPath(d.provinceSlug, d.slug)} class="hover:text-brand-primary"><span class="tabular mr-2 text-text-muted">{i + 1}</span>{d.name}<span class="text-text-muted">, {prov(d.provinceSlug).name}</span></a>
+            <span class="tabular">{d.neighborhoodCount}</span>
+          </li>
+        ))}
+      </ol>
     </section>
-
-    <section class="mt-10" aria-labelledby="illere-gore-heading">
-      <SectionHeader
-        as="h2"
-        id="illere-gore-heading"
-        title="İllere Göre Gözat"
-        description="Bir ile ait mahalle bilgilerine ulaşmak için ili seçin."
-      />
-      <div class="mt-5 flex flex-wrap gap-2">
-        {
-          sorted.map((p) => (
-            <a href={`/iller/${p.slug}/`} class="pill">
-              {p.name}{" "}
-              <span class="ml-1 text-text-muted">
-                ({p.neighborhoodCount ? p.neighborhoodCount : "—"})
-              </span>
-            </a>
-          ))
-        }
-      </div>
-    </section>
-
-    <section
-      class="mt-10 rounded-2xl border border-border bg-surface-muted p-5"
-      aria-labelledby="genisletme-heading"
-    >
-      <h2
-        id="genisletme-heading"
-        class="flex items-center gap-2 text-sm font-bold text-text-primary"
-      >
-        <Icon name="info" size={16} class="text-brand-primary" />
-        Veri Kapsamı Hakkında
-      </h2>
-      <p class="prose-content mt-2 text-sm">
-        Şu anda ayrıntılı mahalle verisi Kadıköy örneği ile sunulmaktadır. Diğer
-        ilçeler için mahalle listeleri kademeli olarak eklenmektedir.
-      </p>
-    </section>
-
-    <div class="mt-12">
-      <FAQAccordion faqs={faqs} />
-    </div>
-  </PageContainer>
+    <div class="mt-12 max-w-3xl"><FAQAccordion faqs={faqs} /></div>
+  </div>
 </BaseLayout>

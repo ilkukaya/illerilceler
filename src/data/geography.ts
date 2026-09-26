@@ -117,11 +117,11 @@ export const dailyFacts: DailyFact[] = [
 
 export const mountains = [
   { name: "Ağrı Dağı", elevationM: 5137, location: "Ağrı" },
-  { name: "Erciyes Dağı", elevationM: 3916, location: "Kayseri" },
+  { name: "Erciyes Dağı", elevationM: 3917, location: "Kayseri" },
   { name: "Kaçkar Dağı", elevationM: 3937, location: "Rize" },
   { name: "Uludağ", elevationM: 2543, location: "Bursa" },
   { name: "Nemrut Dağı (Bitlis)", elevationM: 2948, location: "Bitlis" },
-  { name: "Süphan Dağı", elevationM: 4058, location: "Van" },
+  { name: "Süphan Dağı", elevationM: 4058, location: "Bitlis" },
 ];
 
 export const rivers = [

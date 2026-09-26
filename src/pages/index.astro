@@ -1,678 +1,454 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
-import SectionHeader from "@/components/layout/SectionHeader.astro";
-import SearchBox from "@/components/search/SearchBox.astro";
-import SearchSuggestionChips from "@/components/search/SearchSuggestionChips.astro";
-import StatCard from "@/components/cards/StatCard.astro";
-import CategoryCard from "@/components/cards/CategoryCard.astro";
-import QuickToolCard from "@/components/cards/QuickToolCard.astro";
-import FactCard from "@/components/cards/FactCard.astro";
-import TurkeyMap from "@/components/geography/TurkeyMap.astro";
-import RegionLegend from "@/components/geography/RegionLegend.astro";
-import EducationIllustration from "@/components/education/EducationIllustration.astro";
+import ProvinceMap from "@/components/geography/ProvinceMap.astro";
+import QuickLookups from "@/components/search/QuickLookups.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
 import Icon from "@/components/Icon.astro";
 import { siteConfig } from "@/config/site";
-import { homeStatCards, dailyFacts } from "@/data/geography";
-import { websiteSchema, organizationSchema } from "@/utils/seo";
+import { provinces } from "@/data/provinces";
+import { regions, getRegion } from "@/data/regions";
+import { districts } from "@/data/districts";
+import { formatNumber } from "@/utils/format";
+import {
+  TOTAL_POPULATION,
+  POPULATION_YEAR,
+  provincesByPopulation,
+  provincesByArea,
+  provincesByDistrictCount,
+  districtsByPopulation,
+  density,
+  provincesByDensity,
+} from "@/utils/rankings";
+import { copula } from "@/utils/turkish";
+import { provincePath, districtPath } from "@/utils/links";
+import {
+  websiteSchema,
+  organizationSchema,
+  faqPageSchema,
+  itemListSchema,
+} from "@/utils/seo";
 
-const heroChips = [
-  { label: "47 nerenin plakası?", href: "/plaka-kodlari/47/" },
-  { label: "312 nerenin kodu?", href: "/alan-kodlari/312/" },
-  { label: "İstanbul ilçeleri", href: "/iller/istanbul/ilceler/" },
-  { label: "Kadıköy mahalleleri", href: "/iller/istanbul/kadikoy/" },
-  { label: "34718 posta kodu", href: "/posta-kodlari/34718/" },
-  { label: "Türkiye'nin en büyük ili", href: "/iller/konya/" },
+const alphabetical = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+const topPop = provincesByPopulation.slice(0, 10);
+const topArea = provincesByArea.slice(0, 10);
+const maxPop = topPop[0].population ?? 1;
+const maxArea = topArea[0].areaKm2 ?? 1;
+const smallestArea = provincesByArea[provincesByArea.length - 1];
+const leastPop = provincesByPopulation[provincesByPopulation.length - 1];
+const mostDistricts = provincesByDistrictCount[0];
+const topDistrict = districtsByPopulation[0];
+const topDistrictProvince = provinces.find(
+  (p) => p.slug === topDistrict.provinceSlug,
+)!;
+const densest = provincesByDensity[0];
+
+const faqs = [
+  {
+    question: "Türkiye'de kaç il var?",
+    answer: `Türkiye'de ${provinces.length} il vardır. Plaka kodları 01 (Adana) ile 81 (Düzce) arasında sıralanır; en son il olan Düzce 1999'da kurulmuştur.`,
+  },
+  {
+    question: "Türkiye'de kaç ilçe var?",
+    answer: `Türkiye'de ${districts.length} ilçe bulunur. En çok ilçesi olan il ${mostDistricts.districtCount} ilçeyle ${copula(mostDistricts.name)}.`,
+  },
+  {
+    question: "Türkiye'nin nüfusu kaç?",
+    answer: `TÜİK Adrese Dayalı Nüfus Kayıt Sistemi ${POPULATION_YEAR} sonuçlarına göre Türkiye'nin nüfusu ${formatNumber(TOTAL_POPULATION)} kişidir.`,
+  },
+  {
+    question: "Türkiye'nin en kalabalık ili hangisi?",
+    answer: `${formatNumber(topPop[0].population!)} kişiyle ${copula(topPop[0].name)}. Onu ${topPop[1].name} (${formatNumber(topPop[1].population!)}) ve ${topPop[2].name} (${formatNumber(topPop[2].population!)}) izler.`,
+  },
+  {
+    question: "Yüzölçümü en büyük il hangisi?",
+    answer: `${formatNumber(topArea[0].areaKm2!)} km² ile ${copula(topArea[0].name)}. En küçük il ise ${formatNumber(smallestArea.areaKm2!)} km² ile ${copula(smallestArea.name)}.`,
+  },
+  {
+    question: "Nüfusu en az olan il hangisi?",
+    answer: `${formatNumber(leastPop.population!)} kişiyle ${copula(leastPop.name)}.`,
+  },
+  {
+    question: "Türkiye'nin en kalabalık ilçesi hangisi?",
+    answer: `${topDistrictProvince.name} iline bağlı ${topDistrict.name}, ${formatNumber(topDistrict.population!)} kişiyle Türkiye'nin en kalabalık ilçesidir.`,
+  },
+  {
+    question: "Nüfus yoğunluğu en yüksek il hangisi?",
+    answer: `Kilometrekareye yaklaşık ${formatNumber(Math.round(density(densest.population, densest.areaKm2)!))} kişiyle ${copula(densest.name)}.`,
+  },
 ];
 
-const summaryCards = [
-  {
-    icon: "building-2",
-    label: "İl",
-    value: siteConfig.stats.provinces,
-    color: "blue" as const,
-    href: "/iller/",
-    description: "Türkiye'nin tüm illeri",
-  },
-  {
-    icon: "map",
-    label: "İlçe",
-    value: siteConfig.stats.districts,
-    color: "purple" as const,
-    href: "/ilceler/",
-    description: "Tüm ilçeler listesi",
-  },
-  {
-    icon: "users",
-    label: "Mahalle",
-    value: siteConfig.stats.neighborhoods,
-    color: "green" as const,
-    href: "/mahalleler/",
-    description: "Mahalle ve semtler",
-  },
-  {
-    icon: "home",
-    label: "Köy",
-    value: siteConfig.stats.villages,
-    color: "pink" as const,
-    href: "/koyler/",
-    description: "Köylerimiz",
-  },
+const guides = [
   {
     icon: "car",
-    label: "Plaka Kodu",
-    value: siteConfig.stats.plateCodes,
-    color: "orange" as const,
+    title: "Plaka kodları",
+    text: "01'den 81'e tüm il plakaları",
     href: "/plaka-kodlari/",
-    description: "Tüm plaka kodları",
   },
   {
     icon: "phone",
-    label: "Alan Kodu",
-    value: siteConfig.stats.areaCodes,
-    color: "cyan" as const,
+    title: "Telefon alan kodları",
+    text: "0212'den 0488'e sabit hat kodları",
     href: "/alan-kodlari/",
-    description: "Telefon alan kodları",
-  },
-];
-
-const categories = [
-  {
-    icon: "car",
-    label: "Plaka Kodları",
-    href: "/plaka-kodlari/",
-    color: "orange" as const,
   },
   {
-    icon: "phone",
-    label: "Alan Kodları",
-    href: "/alan-kodlari/",
-    color: "cyan" as const,
-  },
-  {
-    icon: "mail",
-    label: "Posta Kodları",
-    href: "/posta-kodlari/",
-    color: "pink" as const,
-  },
-  {
-    icon: "building-2",
-    label: "İller",
-    href: "/iller/",
-    color: "blue" as const,
-  },
-  {
-    icon: "map",
-    label: "İlçeler",
-    href: "/ilceler/",
-    color: "purple" as const,
-  },
-  {
-    icon: "home",
-    label: "Mahalleler",
-    href: "/mahalleler/",
-    color: "green" as const,
-  },
-  {
-    icon: "tractor",
-    label: "Köyler",
-    href: "/koyler/",
-    color: "orange" as const,
-  },
-  {
-    icon: "compass",
-    label: "Türkiye Bölgeleri",
-    href: "/haritalar/turkiye-haritasi/",
-    color: "blue" as const,
-  },
-  {
-    icon: "map-pinned",
-    label: "Haritalar",
-    href: "/haritalar/",
-    color: "purple" as const,
+    icon: "route",
+    title: "İller arası mesafe",
+    text: "3.240 il çifti için kuş uçuşu mesafe",
+    href: "/mesafe/",
   },
   {
     icon: "bar-chart-3",
-    label: "Nüfus İstatistikleri",
-    href: "/istatistikler/en-kalabalik-iller/",
-    color: "green" as const,
-  },
-  {
-    icon: "mountain",
-    label: "Rakım Bilgileri",
-    href: "/istatistikler/#rakim",
-    color: "cyan" as const,
-  },
-  {
-    icon: "ruler",
-    label: "Yüzölçümü",
-    href: "/istatistikler/yuzolcumune-gore-en-buyuk-iller/",
-    color: "pink" as const,
-  },
-  {
-    icon: "route",
-    label: "Komşu İller",
-    href: "/istatistikler/#komsu-iller",
-    color: "orange" as const,
-  },
-  {
-    icon: "plane",
-    label: "Havalimanları",
-    href: "/rehber/#ulasim",
-    color: "blue" as const,
+    title: "İstatistikler",
+    text: "Nüfus, yüzölçümü, yoğunluk sıralamaları",
+    href: "/istatistikler/",
   },
   {
     icon: "graduation-cap",
-    label: "Üniversiteler",
-    href: "/rehber/#universiteler",
-    color: "purple" as const,
+    title: "Eğitim köşesi",
+    text: "81 il ve plakaları, coğrafya testi",
+    href: "/egitim/",
+  },
+  {
+    icon: "database",
+    title: "Açık veri",
+    text: "İl ve ilçe verileri JSON / CSV",
+    href: "/acik-veri/",
   },
 ];
-
-const mostSearched = [
-  {
-    rank: 1,
-    label: "47 nerenin plakası?",
-    meta: "Mardin",
-    href: "/plaka-kodlari/47/",
-  },
-  {
-    rank: 2,
-    label: "34 nerenin plakası?",
-    meta: "İstanbul",
-    href: "/plaka-kodlari/34/",
-  },
-  {
-    rank: 3,
-    label: "312 nerenin alan kodu?",
-    meta: "Ankara",
-    href: "/alan-kodlari/312/",
-  },
-  {
-    rank: 4,
-    label: "İstanbul ilçeleri",
-    meta: "39 ilçe",
-    href: "/iller/istanbul/ilceler/",
-  },
-  {
-    rank: 5,
-    label: "Türkiye'nin en büyük ili hangisi?",
-    meta: "Konya",
-    href: "/iller/konya/",
-  },
-  {
-    rank: 6,
-    label: "0212 nerenin alan kodu?",
-    meta: "İstanbul Avrupa",
-    href: "/alan-kodlari/212/",
-  },
-  {
-    rank: 7,
-    label: "34718 posta kodu nereye ait?",
-    meta: "Kadıköy / İstanbul",
-    href: "/posta-kodlari/34718/",
-  },
-  {
-    rank: 8,
-    label: "Ankara posta kodları",
-    meta: "Tüm liste",
-    href: "/posta-kodlari/",
-  },
-  {
-    rank: 9,
-    label: "Kadıköy mahalleleri",
-    meta: "21 mahalle",
-    href: "/iller/istanbul/kadikoy/",
-  },
-  {
-    rank: 10,
-    label: "Türkiye'nin en kalabalık ilçesi?",
-    meta: "Çankaya",
-    href: "/iller/ankara/cankaya/",
-  },
-];
-
-const quickTools = [
-  {
-    icon: "route",
-    label: "İki Şehir Arası Mesafe",
-    href: "/araclar/iki-sehir-arasi-mesafe/",
-    color: "blue" as const,
-  },
-  {
-    icon: "car",
-    label: "Plaka Sorgulama",
-    href: "/plaka-kodlari/",
-    color: "orange" as const,
-  },
-  {
-    icon: "phone",
-    label: "Alan Kodu Sorgulama",
-    href: "/alan-kodlari/",
-    color: "pink" as const,
-  },
-  {
-    icon: "mail",
-    label: "Posta Kodu Sorgulama",
-    href: "/posta-kodlari/",
-    color: "cyan" as const,
-  },
-  {
-    icon: "users",
-    label: "Nüfus Sorgulama",
-    href: "/istatistikler/en-kalabalik-iller/",
-    color: "green" as const,
-  },
-  {
-    icon: "mountain",
-    label: "Rakım Sorgulama",
-    href: "/istatistikler/#rakim",
-    color: "purple" as const,
-  },
-  {
-    icon: "sunrise",
-    label: "Güneş Doğuşu ve Batışı",
-    href: "/araclar/gunes-dogusu-batisi/",
-    color: "orange" as const,
-  },
-];
-
-const fact = dailyFacts[0];
 ---
 
 <BaseLayout
   title={siteConfig.title}
   description={siteConfig.description}
   path="/"
-  schema={[websiteSchema(), organizationSchema()]}
   useTemplate={false}
+  schema={[
+    websiteSchema(),
+    organizationSchema(),
+    faqPageSchema(faqs),
+    itemListSchema(
+      alphabetical.map((p) => ({ name: p.name, href: provincePath(p.slug) })),
+    ),
+  ]}
 >
   <!-- Hero -->
-  <section
-    class="relative overflow-hidden border-b border-border bg-gradient-to-b from-brand-sky to-background"
-  >
+  <section class="border-b border-border">
     <div
-      class="pointer-events-none absolute right-6 top-6 hidden opacity-80 sm:block"
-      aria-hidden="true"
+      class="container-page grid items-center gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:py-16"
     >
-      <svg
-        width="34"
-        height="23"
-        viewBox="0 0 34 23"
-        class="rounded-sm shadow-sm"
-      >
-        <rect width="34" height="23" fill="#E30A17"></rect>
-        <circle cx="13" cy="11.5" r="6" fill="#fff"></circle>
-        <circle cx="14.6" cy="11.5" r="4.8" fill="#E30A17"></circle>
-        <text
-          x="21.5"
-          y="14.7"
-          font-size="7"
-          fill="#fff"
-          font-family="Arial, sans-serif">★</text
+      <div>
+        <p class="section-eyebrow">
+          TÜİK {POPULATION_YEAR} verileriyle güncellendi
+        </p>
+        <h1
+          class="mt-3 text-[2.4rem] leading-[1.08] sm:text-5xl lg:text-[3.4rem]"
         >
-      </svg>
-    </div>
-    <PageContainer class="relative py-12 sm:py-16 lg:py-20">
-      <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-        <div>
-          <h1
-            class="text-4xl font-extrabold leading-[1.08] tracking-tight text-text-primary sm:text-5xl lg:text-[52px]"
+          Türkiye'nin 81 ili ve 973 ilçesi, tek rehberde.
+        </h1>
+        <p class="mt-4 max-w-xl text-lg leading-relaxed text-text-secondary">
+          Nüfus, yüzölçümü, plaka ve alan kodları, komşu iller ve mesafeler —
+          resmî verilerle, sade ve hızlı.
+        </p>
+
+        <form action="/arama/" method="get" class="mt-7" role="search">
+          <label for="hero-search" class="sr-only">Sitede ara</label>
+          <div
+            class="flex items-center gap-2 rounded-xl border border-border-strong bg-surface p-1.5 pl-4 focus-within:border-text-primary"
           >
-            Türkiye hakkında aradığın <span class="text-brand-primary"
-              >her bilgi</span
-            > tek yerde!
-          </h1>
-          <p class="prose-content mt-4 max-w-lg text-base sm:text-lg">
-            Plakadan posta koduna, nüfustan rakıma, ilçelerden mahallelere kadar
-            tüm bilgiler.
-          </p>
-          <SearchBox class="mt-7" />
-          <SearchSuggestionChips items={heroChips} class="mt-4" />
-        </div>
-        <div class="relative hidden lg:block">
-          <div class="overflow-hidden rounded-3xl shadow-popover">
-            <svg
-              viewBox="0 0 640 420"
-              class="h-full w-full"
-              role="img"
-              aria-label="Boğaz ve Kız Kulesi'ni betimleyen illüstrasyon"
-            >
-              <defs>
-                <linearGradient id="hero-sky" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#BFE0FF"></stop>
-                  <stop offset="100%" stop-color="#EAF4FF"></stop>
-                </linearGradient>
-                <linearGradient id="hero-sea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#3B82F6"></stop>
-                  <stop offset="100%" stop-color="#1D4ED8"></stop>
-                </linearGradient>
-              </defs>
-              <rect width="640" height="420" fill="url(#hero-sky)"></rect>
-              <circle cx="500" cy="90" r="46" fill="#FFF4E6" opacity="0.9"
-              ></circle>
-              <path
-                d="M0 210 Q160 170 320 205 T640 200 V420 H0 Z"
-                fill="#93C5FD"
-                opacity="0.5"></path>
-              <path
-                d="M0 250 Q160 220 320 245 T640 240 V420 H0 Z"
-                fill="url(#hero-sea)"></path>
-              <rect
-                x="60"
-                y="150"
-                width="10"
-                height="90"
-                fill="#475569"
-                opacity="0.55"></rect>
-              <rect
-                x="560"
-                y="140"
-                width="10"
-                height="100"
-                fill="#475569"
-                opacity="0.55"></rect>
-              <path
-                d="M20 165 C 120 105, 500 105, 610 165"
-                fill="none"
-                stroke="#475569"
-                stroke-width="6"
-                opacity="0.55"
-                stroke-linecap="round"></path>
-              <!-- Kız Kulesi (Maiden's Tower) on a small islet -->
-              <g transform="translate(330 172)">
-                <ellipse
-                  cx="0"
-                  cy="80"
-                  rx="32"
-                  ry="9"
-                  fill="#1E3A5F"
-                  opacity="0.35"></ellipse>
-                <path d="M-14 78 L-11 22 L11 22 L14 78 Z" fill="#64748B"></path>
-                <rect
-                  x="-4.5"
-                  y="46"
-                  width="9"
-                  height="13"
-                  rx="1.5"
-                  fill="#1E293B"
-                  opacity="0.55"></rect>
-                <path d="M-17 22 L0 -8 L17 22 Z" fill="#B91C1C" opacity="0.88"
-                ></path>
-                <line
-                  x1="0"
-                  y1="-8"
-                  x2="0"
-                  y2="-25"
-                  stroke="#334155"
-                  stroke-width="1.5"></line>
-                <path d="M0 -25 L11 -20 L0 -16 Z" fill="#EF4444"></path>
-              </g>
-              <!-- hot air balloons floating above the bridge -->
-              <g opacity="0.9">
-                <ellipse cx="128" cy="66" rx="19" ry="25" fill="#F04438"
-                ></ellipse>
-                <path
-                  d="M111 74 Q128 84 145 74"
-                  fill="none"
-                  stroke="#17214A"
-                  stroke-width="1.5"
-                  opacity="0.5"></path>
-                <rect
-                  x="123"
-                  y="94"
-                  width="10"
-                  height="8"
-                  rx="1.5"
-                  fill="#17214A"
-                  opacity="0.6"></rect>
-                <line
-                  x1="115"
-                  y1="88"
-                  x2="123"
-                  y2="96"
-                  stroke="#17214A"
-                  stroke-width="1.2"
-                  opacity="0.5"></line>
-                <line
-                  x1="141"
-                  y1="88"
-                  x2="133"
-                  y2="96"
-                  stroke="#17214A"
-                  stroke-width="1.2"
-                  opacity="0.5"></line>
-              </g>
-              <g opacity="0.85">
-                <ellipse cx="235" cy="48" rx="15" ry="20" fill="#F79009"
-                ></ellipse>
-                <path
-                  d="M222 55 Q235 63 248 55"
-                  fill="none"
-                  stroke="#17214A"
-                  stroke-width="1.3"
-                  opacity="0.5"></path>
-                <rect
-                  x="230.5"
-                  y="75"
-                  width="9"
-                  height="7"
-                  rx="1.3"
-                  fill="#17214A"
-                  opacity="0.55"></rect>
-                <line
-                  x1="224"
-                  y1="70"
-                  x2="230.5"
-                  y2="76"
-                  stroke="#17214A"
-                  stroke-width="1"
-                  opacity="0.5"></line>
-                <line
-                  x1="246"
-                  y1="70"
-                  x2="239.5"
-                  y2="76"
-                  stroke="#17214A"
-                  stroke-width="1"
-                  opacity="0.5"></line>
-              </g>
-            </svg>
+            <Icon name="search" size={20} class="shrink-0 text-text-muted" />
+            <input
+              id="hero-search"
+              name="q"
+              type="search"
+              autocomplete="off"
+              enterkeyhint="search"
+              placeholder="İl, ilçe, plaka veya alan kodu yazın"
+              class="h-11 w-full min-w-0 bg-transparent text-base outline-none placeholder:text-text-muted"
+            />
+            <button class="btn btn-accent shrink-0">Ara</button>
           </div>
+        </form>
+
+        <div class="mt-4">
+          <QuickLookups />
         </div>
       </div>
 
-      <!-- National summary cards -->
-      <div
-        class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:mt-14 lg:grid-cols-6"
-      >
-        {summaryCards.map((c) => <StatCard {...c} />)}
+      <div class="min-w-0">
+        <ProvinceMap />
       </div>
-    </PageContainer>
+    </div>
   </section>
 
-  <PageContainer class="py-6">
-    <AdSlot variant="leaderboard" />
-  </PageContainer>
-
-  <!-- Main grid -->
-  <PageContainer class="pb-16">
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-      <!-- Left: categories -->
-      <aside class="lg:col-span-3 lg:order-1">
-        <div class="card sticky top-32 p-3">
-          <h2
-            class="px-2.5 py-2 text-xs font-bold uppercase tracking-wide text-text-muted"
-          >
-            Kategoriler
-          </h2>
-          <nav aria-label="Kategoriler" class="flex flex-col gap-0.5">
-            {categories.map((c) => <CategoryCard {...c} />)}
-          </nav>
-        </div>
-      </aside>
-
-      <!-- Center -->
-      <div class="lg:col-span-6 lg:order-2 flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <section class="card p-5" aria-labelledby="most-searched-heading">
-            <SectionHeader
-              eyebrow="Trend"
-              title="En Çok Aranan"
-              href="/arama/"
-              as="h2"
-              size="md"
-            />
-            <ol class="mt-4 flex flex-col gap-1">
-              {
-                mostSearched.map((item) => (
-                  <li>
-                    <a
-                      href={item.href}
-                      class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface-muted min-h-11"
-                    >
-                      <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-purple-soft text-[11px] font-bold text-brand-primary">
-                        {item.rank}
-                      </span>
-                      <span class="min-w-0 flex-1">
-                        <span class="block truncate text-sm font-semibold text-text-primary">
-                          {item.label}
-                        </span>
-                      </span>
-                      <span class="shrink-0 text-xs text-text-muted">
-                        {item.meta}
-                      </span>
-                    </a>
-                  </li>
-                ))
-              }
-            </ol>
-          </section>
-
-          <section class="card p-5" aria-labelledby="map-heading">
-            <SectionHeader
-              eyebrow="Harita"
-              title="Türkiye Haritası"
-              href="/haritalar/turkiye-haritasi/"
-              linkLabel="Bölgelere Göre Keşfet"
-              as="h2"
-              size="md"
-            />
-            <div class="mt-4">
-              <TurkeyMap compact />
-            </div>
-            <RegionLegend class="mt-4" />
-          </section>
-        </div>
-
-        <section class="card p-5" aria-labelledby="stats-heading">
-          <SectionHeader
-            eyebrow="Veri"
-            title="İstatistiklerle Türkiye"
-            href="/istatistikler/"
-            as="h2"
-            size="md"
-          />
-          <div class="mt-4 grid grid-cols-2 gap-3">
-            {
-              homeStatCards.map((s) => (
-                <StatCard
-                  icon={s.icon}
-                  label={s.label}
-                  value={s.value}
-                  color={s.color}
-                  description={s.description}
-                  compact
-                />
-              ))
-            }
+  <!-- National figures -->
+  <section class="border-b border-border bg-surface">
+    <dl
+      class="container-page tabular grid grid-cols-2 divide-border py-6 sm:grid-cols-4 sm:divide-x"
+    >
+      {
+        [
+          { k: "İl", v: String(provinces.length) },
+          { k: "İlçe", v: formatNumber(districts.length) },
+          {
+            k: `Nüfus (${POPULATION_YEAR})`,
+            v: formatNumber(TOTAL_POPULATION),
+          },
+          { k: "Bölge", v: String(regions.length) },
+        ].map((s) => (
+          <div class="px-0 py-2 sm:px-6 first:sm:pl-0">
+            <dt class="text-sm text-text-muted">{s.k}</dt>
+            <dd class="mt-0.5 font-serif text-3xl font-semibold">{s.v}</dd>
           </div>
-        </section>
-      </div>
+        ))
+      }
+    </dl>
+  </section>
 
-      <!-- Right sidebar -->
-      <aside class="lg:col-span-3 lg:order-3 flex flex-col gap-6">
-        <section aria-labelledby="daily-fact-heading">
-          <h2 id="daily-fact-heading" class="sr-only">Günün Bilgisi</h2>
-          <p class="section-eyebrow mb-2">Günün Bilgisi</p>
-          <FactCard fact={fact} />
-        </section>
-
-        <section
-          class="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-brand-green-soft to-brand-cyan-soft p-5"
-          aria-labelledby="edu-corner-heading"
+  <div class="container-page">
+    <!-- A–Z provinces -->
+    <section class="mt-14" id="iller" aria-labelledby="iller-heading">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 id="iller-heading" class="text-3xl">81 il, plaka kodlarıyla</h2>
+          <p class="mt-1 text-text-secondary">
+            Bir ile dokunun: nüfus, ilçeler, harita ve daha fazlası.
+          </p>
+        </div>
+        <div
+          class="scrollbar-none -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
+          role="group"
+          aria-label="Bölgeye göre filtrele"
         >
-          <EducationIllustration class="mx-auto h-28 w-full max-w-[220px]" />
-          <h2
-            id="edu-corner-heading"
-            class="mt-3 text-base font-extrabold text-text-primary"
+          <button
+            type="button"
+            class="region-filter pmap-mode shrink-0"
+            data-region=""
+            aria-pressed="true">Tümü</button
           >
-            Eğitim Köşesi
-          </h2>
-          <p class="mt-1.5 text-sm text-text-secondary">
-            Ödevlerin için aradığın tüm bilgiler burada!
-          </p>
-          <a href="/egitim/" class="btn btn-primary mt-4 w-full">
-            Keşfet
-            <Icon name="arrow-right" size={16} />
-          </a>
-        </section>
+          {
+            regions.map((r) => (
+              <button
+                type="button"
+                class="region-filter pmap-mode shrink-0"
+                data-region={r.slug}
+                aria-pressed="false"
+              >
+                {r.name.replace(" Bölgesi", "")}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+      <ul
+        id="province-grid"
+        class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      >
+        {
+          alphabetical.map((p) => (
+            <li data-region={p.region} class="bg-surface">
+              <a
+                href={provincePath(p.slug)}
+                class="flex h-full items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-muted sm:px-4"
+              >
+                <span class="tabular w-7 shrink-0 text-sm font-semibold text-brand-primary">
+                  {p.plateCode}
+                </span>
+                <span class="min-w-0">
+                  <span class="block truncate font-medium text-text-primary">
+                    {p.name}
+                  </span>
+                  <span class="tabular block text-xs text-text-muted">
+                    {p.population ? formatNumber(p.population) : ""} ·{" "}
+                    {p.districtCount} ilçe
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
 
-        <section class="card p-5" aria-labelledby="social-heading">
-          <h2 id="social-heading" class="text-sm font-bold text-text-primary">
-            Bizi Takip Edin
-          </h2>
-          <p class="mt-1 text-xs text-text-secondary">
-            Güncel bilgiler ve paylaşımlar için sosyal medya hesaplarımızı takip
-            edin.
-          </p>
-          <div class="mt-4 flex items-center gap-2">
+    <AdSlot variant="leaderboard" class="mt-12" />
+
+    <!-- Rankings -->
+    <section class="mt-14 grid gap-10 lg:grid-cols-2">
+      {
+        [
+          {
+            title: "En kalabalık 10 il",
+            list: topPop,
+            value: (p: (typeof topPop)[number]) => p.population ?? 0,
+            max: maxPop,
+            fmt: (v: number) => formatNumber(v),
+            href: "/istatistikler/en-kalabalik-iller/",
+          },
+          {
+            title: "Yüzölçümü en büyük 10 il",
+            list: topArea,
+            value: (p: (typeof topArea)[number]) => p.areaKm2 ?? 0,
+            max: maxArea,
+            fmt: (v: number) => `${formatNumber(v)} km²`,
+            href: "/istatistikler/yuzolcumune-gore-en-buyuk-iller/",
+          },
+        ].map((block) => (
+          <div>
+            <div class="flex items-end justify-between gap-3">
+              <h2 class="text-2xl">{block.title}</h2>
+              <a href={block.href} class="link text-sm">
+                Tüm liste
+              </a>
+            </div>
+            <ol class="mt-4 space-y-2">
+              {block.list.map((p, i) => (
+                <li>
+                  <a
+                    href={provincePath(p.slug)}
+                    class="group grid grid-cols-[1.5rem_7rem_1fr] items-center gap-3 text-sm sm:grid-cols-[1.5rem_8rem_1fr]"
+                  >
+                    <span class="tabular text-text-muted">{i + 1}</span>
+                    <span class="truncate font-medium group-hover:text-brand-primary">
+                      {p.name}
+                    </span>
+                    <span class="flex items-center gap-2">
+                      <span
+                        class="h-2.5 rounded-sm bg-[var(--data-4)] group-hover:bg-brand-primary"
+                        style={`width:${Math.max(4, (block.value(p) / block.max) * 100)}%`}
+                      />
+                      <span class="tabular shrink-0 text-xs text-text-secondary">
+                        {block.fmt(block.value(p))}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))
+      }
+    </section>
+
+    <!-- Guides -->
+    <section class="mt-16" aria-labelledby="rehber-heading">
+      <h2 id="rehber-heading" class="text-3xl">Rehberler ve araçlar</h2>
+      <ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          guides.map((g) => (
+            <li>
+              <a
+                href={g.href}
+                class="card card-hover flex h-full items-start gap-4 p-5"
+              >
+                <Icon name={g.icon} size={22} class="mt-0.5 shrink-0 text-brand-primary" />
+                <span>
+                  <span class="block font-semibold text-text-primary">
+                    {g.title}
+                  </span>
+                  <span class="mt-0.5 block text-sm text-text-secondary">
+                    {g.text}
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- Quick answers -->
+    <section class="mt-16 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <FAQAccordion faqs={faqs} title="Hızlı cevaplar" id="hizli-cevaplar" />
+      <aside class="space-y-4">
+        <div class="card p-5">
+          <p class="section-eyebrow">Bölgeler</p>
+          <ul class="mt-3 space-y-2 text-sm">
             {
-              [
-                {
-                  label: "Instagram",
-                  icon: "instagram",
-                  href: siteConfig.social.instagram,
-                },
-                {
-                  label: "Facebook",
-                  icon: "facebook",
-                  href: siteConfig.social.facebook,
-                },
-                {
-                  label: "Twitter / X",
-                  icon: "twitter",
-                  href: siteConfig.social.twitter,
-                },
-                {
-                  label: "YouTube",
-                  icon: "youtube",
-                  href: siteConfig.social.youtube,
-                },
-              ].map((s) => (
-                <a
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:border-brand-primary hover:text-brand-primary"
-                >
-                  <Icon name={s.icon} size={17} />
-                </a>
+              regions.map((r) => (
+                <li class="flex items-center justify-between gap-3">
+                  <span class="inline-flex items-center gap-2">
+                    <span
+                      class="h-2.5 w-2.5 rounded-sm"
+                      style={`background:${r.color}`}
+                    />
+                    {r.name}
+                  </span>
+                  <span class="tabular text-text-muted">
+                    {provinces.filter((p) => p.region === r.slug).length} il
+                  </span>
+                </li>
               ))
             }
-          </div>
-        </section>
+          </ul>
+        </div>
+        <div class="card p-5 text-sm leading-relaxed text-text-secondary">
+          <p class="section-eyebrow">Veri kaynağı</p>
+          <p class="mt-2">
+            Nüfus verileri TÜİK Adrese Dayalı Nüfus Kayıt Sistemi {
+              POPULATION_YEAR
+            } sonuçlarından, yüzölçümü Harita Genel Müdürlüğü'nden alınmıştır.
+          </p>
+          <a href="/rehber/" class="link mt-2 inline-block">Yöntemimiz</a>
+        </div>
       </aside>
-    </div>
-
-    <!-- Quick tools -->
-    <section class="mt-10" aria-labelledby="quick-tools-heading">
-      <SectionHeader title="Hızlı Araçlar" as="h2" id="quick-tools-heading" />
-      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
-        {quickTools.map((tool) => <QuickToolCard {...tool} />)}
-      </div>
     </section>
-  </PageContainer>
+
+    <section class="mt-16" aria-labelledby="kalabalik-ilceler">
+      <h2 id="kalabalik-ilceler" class="text-2xl">
+        Türkiye'nin en kalabalık ilçeleri
+      </h2>
+      <ol
+        class="mt-4 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {
+          districtsByPopulation.slice(0, 15).map((d, i) => {
+            const p = getRegion(
+              provinces.find((x) => x.slug === d.provinceSlug)?.region ?? "",
+            );
+            const prov = provinces.find((x) => x.slug === d.provinceSlug);
+            return (
+              <li class="flex items-baseline justify-between gap-3 border-b border-border py-2">
+                <a
+                  href={districtPath(d.provinceSlug, d.slug)}
+                  class="hover:text-brand-primary"
+                  title={p?.name}
+                >
+                  <span class="tabular mr-2 text-text-muted">{i + 1}</span>
+                  {d.name}
+                  <span class="text-text-muted">, {prov?.name}</span>
+                </a>
+                <span class="tabular text-text-secondary">
+                  {formatNumber(d.population ?? 0)}
+                </span>
+              </li>
+            );
+          })
+        }
+      </ol>
+    </section>
+  </div>
 </BaseLayout>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>(".region-filter");
+  const items = document.querySelectorAll<HTMLElement>("#province-grid > li");
+  buttons.forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const r = btn.dataset.region;
+      buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      items.forEach((li) => {
+        li.hidden = Boolean(r) && li.dataset.region !== r;
+      });
+    }),
+  );
+
+  const heroInput = document.getElementById("hero-search") as HTMLInputElement | null;
+  heroInput?.addEventListener("input", () => {
+    if (heroInput.value.trim().length >= 2 && window.matchMedia("(min-width: 768px)").matches) {
+      window.dispatchEvent(new CustomEvent("illerilceler:open-search", { detail: heroInput.value }));
+      heroInput.value = "";
+    }
+  });
+</script>

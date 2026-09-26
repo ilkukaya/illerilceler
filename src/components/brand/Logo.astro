@@ -3,33 +3,25 @@ import BrandMark from "./BrandMark.astro";
 
 interface Props {
   size?: "sm" | "md" | "lg";
-  showTagline?: boolean;
   class?: string;
 }
 
-const { size = "md", showTagline = true, class: className = "" } = Astro.props;
+const { size = "md", class: className = "" } = Astro.props;
 
-const markSize = size === "sm" ? 30 : size === "lg" ? 46 : 36;
+const markSize = size === "sm" ? 24 : size === "lg" ? 34 : 28;
 const textSize =
-  size === "sm" ? "text-[15px]" : size === "lg" ? "text-2xl" : "text-[17px]";
+  size === "sm" ? "text-[17px]" : size === "lg" ? "text-2xl" : "text-[19px]";
 ---
 
 <a
   href="/"
-  class={`inline-flex items-center gap-2.5 ${className}`}
-  aria-label="illerilceler.com anasayfa"
+  class={`inline-flex items-center gap-2 ${className}`}
+  aria-label="İller İlçeler — ana sayfa"
 >
   <BrandMark size={markSize} />
-  <span class="flex flex-col leading-tight">
-    <span class={`font-extrabold tracking-tight text-text-primary ${textSize}`}
-      >iller<span class="text-brand-primary">ilceler</span>.com</span
-    >
-    {
-      showTagline && (
-        <span class="text-[11px] font-medium text-text-secondary -mt-0.5">
-          Türkiye Bilgi Merkezi
-        </span>
-      )
-    }
+  <span
+    class={`font-serif font-semibold tracking-tight text-text-primary ${textSize}`}
+  >
+    İller İlçeler
   </span>
 </a>

@@ -132,7 +132,7 @@ async function main() {
       stylized++;
     }
 
-    const ogPath = path.join(ROOT, "public/og/provinces", `${province.slug}.webp`);
+    const ogPath = path.join(ROOT, "public/og/provinces", `${province.slug}.jpg`);
     if (!existsSync(ogPath)) {
       findings.push({ slug: province.slug, level: "error", message: "Missing OG image (run npm run og:generate)." });
     } else if (statSync(ogPath).size < OG_MIN_BYTES) {
@@ -183,7 +183,7 @@ async function main() {
       stylized++;
     }
 
-    const ogPath = path.join(ROOT, "public/og/districts", district.provinceSlug, `${district.slug}.webp`);
+    const ogPath = path.join(ROOT, "public/og/districts", district.provinceSlug, `${district.slug}.jpg`);
     if (!existsSync(ogPath)) {
       findings.push({ slug: district.id, level: "error", message: "Missing OG image (run npm run og:generate)." });
     } else if (statSync(ogPath).size < OG_MIN_BYTES) {

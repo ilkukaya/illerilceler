@@ -3,8 +3,11 @@ import Header from "@/components/layout/Header.astro";
 import Footer from "@/components/layout/Footer.astro";
 import SEOHead from "@/components/seo/SEOHead.astro";
 import StructuredData from "@/components/seo/StructuredData.astro";
+import ConsentAndAnalytics from "@/components/seo/ConsentAndAnalytics.astro";
 import { siteConfig } from "@/config/site";
-import "@fontsource-variable/plus-jakarta-sans";
+import { monetization } from "@/config/monetization";
+import "@fontsource-variable/inter/wght.css";
+import "@fontsource-variable/source-serif-4/wght.css";
 import "@/styles/global.css";
 
 interface Props {
@@ -16,6 +19,8 @@ interface Props {
   schema?: Record<string, unknown> | Record<string, unknown>[];
   bodyClass?: string;
   useTemplate?: boolean;
+  type?: "website" | "article";
+  modified?: string;
 }
 
 const {
@@ -27,17 +32,59 @@ const {
   schema,
   bodyClass = "",
   useTemplate = true,
+  type,
+  modified,
 } = Astro.props;
+const { verification } = monetization;
 ---
 
 <!doctype html>
-<html lang={siteConfig.language}>
+<html lang={siteConfig.language} dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem("illerilceler-theme");
+          document.documentElement.dataset.theme =
+            stored ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light");
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="generator" content={Astro.generator} />
+    <meta
+      name="theme-color"
+      content="#f7f6f2"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0f1013"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    {
+      verification.google && (
+        <meta name="google-site-verification" content={verification.google} />
+      )
+    }
+    {
+      verification.bing && (
+        <meta name="msvalidate.01" content={verification.bing} />
+      )
+    }
+    {
+      verification.yandex && (
+        <meta name="yandex-verification" content={verification.yandex} />
+      )
+    }
     <SEOHead
       title={title}
       description={description}
@@ -45,21 +92,11 @@ const {
       image={image}
       noindex={noindex}
       useTemplate={useTemplate}
+      type={type}
+      modified={modified}
     />
     {schema && <StructuredData schema={schema} />}
-    <script is:inline>
-      (function () {
-        try {
-          var stored = localStorage.getItem("illerilceler-theme");
-          var theme =
-            stored ||
-            (window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light");
-          document.documentElement.dataset.theme = theme;
-        } catch (e) {}
-      })();
-    </script>
+    <ConsentAndAnalytics />
   </head>
   <body
     class={`min-h-screen bg-background font-sans text-text-primary antialiased ${bodyClass}`}

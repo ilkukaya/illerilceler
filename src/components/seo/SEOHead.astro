@@ -10,6 +10,7 @@ interface Props {
   type?: "website" | "article";
   noindex?: boolean;
   useTemplate?: boolean;
+  modified?: string;
 }
 
 const {
@@ -20,33 +21,46 @@ const {
   type = "website",
   noindex = false,
   useTemplate = true,
+  modified,
 } = Astro.props;
 
 const fullTitle = pageTitle(title, useTemplate);
 const canonical = absoluteUrl(path);
 const ogImage = image.startsWith("http") ? image : absoluteUrl(image);
+const isRaster = /\.(png|jpe?g|webp)$/i.test(ogImage);
 ---
 
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
-<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
-<meta name="theme-color" content={siteConfig.themeColor} />
+<link rel="alternate" hreflang="tr" href={canonical} />
+<link rel="alternate" hreflang="x-default" href={canonical} />
+<meta
+  name="robots"
+  content={noindex
+    ? "noindex, follow"
+    : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"}
+/>
 
 <meta property="og:type" content={type} />
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={ogImage} />
+{
+  isRaster && (
+    <>
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+    </>
+  )
+}
+<meta property="og:image:alt" content={title} />
 <meta property="og:site_name" content={siteConfig.name} />
 <meta property="og:locale" content="tr_TR" />
+{modified && <meta property="article:modified_time" content={modified} />}
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
-{
-  siteConfig.twitterHandle && (
-    <meta name="twitter:site" content={siteConfig.twitterHandle} />
-  )
-}

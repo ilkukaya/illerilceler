@@ -1,217 +1,79 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import SectionHeader from "@/components/layout/SectionHeader.astro";
-import StatCard from "@/components/cards/StatCard.astro";
-import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import Icon from "@/components/Icon.astro";
-import { homeStatCards, mountains } from "@/data/geography";
-import { provinces, getProvinceBySlug } from "@/data/provinces";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { provinces } from "@/data/provinces";
+import { districts } from "@/data/districts";
+import { formatNumber } from "@/utils/format";
+import {
+  TOTAL_POPULATION, TOTAL_AREA, NATIONAL_DENSITY, POPULATION_YEAR,
+  provincesByPopulation, provincesByArea, provincesByDensity, provincesByElevation,
+  provincesByDistrictCount, districtsByPopulation, density,
+} from "@/utils/rankings";
+import { provincePath } from "@/utils/links";
+import { webPageSchema } from "@/utils/seo";
 
 const path = "/istatistikler/";
-const topPopulated = [...provinces]
-  .sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
-  .slice(0, 5);
-const topArea = [...provinces]
-  .sort((a, b) => (b.areaKm2 ?? 0) - (a.areaKm2 ?? 0))
-  .slice(0, 5);
-const sampleNeighborProvince = getProvinceBySlug("istanbul")!;
-
-const faqs = [
-  {
-    question: "Türkiye'nin en yüksek noktası neresidir?",
-    answer:
-      "Türkiye'nin en yüksek noktası, Ağrı ilinde bulunan 5.137 metre yükseklikteki Ağrı Dağı'dır.",
-  },
-  {
-    question: "Türkiye'nin en kalabalık ili hangisidir?",
-    answer: `${topPopulated[0]?.name}, Türkiye'nin en kalabalık ilidir.`,
-  },
-  {
-    question: "Türkiye'nin yüzölçümü bakımından en büyük ili hangisidir?",
-    answer: `${topArea[0]?.name}, yüzölçümü bakımından Türkiye'nin en büyük ilidir.`,
-  },
+const last = <T,>(a: T[]) => a[a.length - 1];
+const cards = [
+  { title: "Nüfusa göre iller", href: "/istatistikler/en-kalabalik-iller/", top: provincesByPopulation[0], value: formatNumber(provincesByPopulation[0].population ?? 0), bottom: last(provincesByPopulation) },
+  { title: "Yüzölçümüne göre iller", href: "/istatistikler/yuzolcumune-gore-en-buyuk-iller/", top: provincesByArea[0], value: `${formatNumber(provincesByArea[0].areaKm2 ?? 0)} km²`, bottom: last(provincesByArea) },
+  { title: "Nüfus yoğunluğuna göre iller", href: "/istatistikler/nufus-yogunluguna-gore-iller/", top: provincesByDensity[0], value: `${formatNumber(Math.round(density(provincesByDensity[0].population, provincesByDensity[0].areaKm2) ?? 0))} kişi/km²`, bottom: last(provincesByDensity) },
+  { title: "Rakıma göre iller", href: "/istatistikler/rakima-gore-iller/", top: provincesByElevation[0], value: `${formatNumber(provincesByElevation[0].elevationM ?? 0)} m`, bottom: last(provincesByElevation) },
+  { title: "İlçe sayısına göre iller", href: "/istatistikler/en-cok-ilcesi-olan-iller/", top: provincesByDistrictCount[0], value: `${provincesByDistrictCount[0].districtCount} ilçe`, bottom: last(provincesByDistrictCount) },
 ];
+const title = `Türkiye İstatistikleri ${POPULATION_YEAR}: İl ve İlçe Sıralamaları`;
+const description = `Türkiye nüfusu ${formatNumber(TOTAL_POPULATION)} (TÜİK ${POPULATION_YEAR}). İllerin nüfus, yüzölçümü, yoğunluk, rakım ve ilçe sayısı sıralamaları; en kalabalık ilçeler.`;
 ---
 
-<BaseLayout
-  title="İstatistiklerle Türkiye — Nüfus, Yüzölçümü ve Rakım Verileri"
-  description="Türkiye'nin nüfus, yüzölçümü, rakım ve komşu il istatistiklerini keşfedin."
-  path={path}
->
-  <PageContainer class="py-4">
+<BaseLayout title={title} description={description} path={path} schema={webPageSchema({ name: title, path, description })}>
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs items={[{ label: "İstatistikler", href: path }]} />
-  </PageContainer>
+    <h1 class="mt-5 text-4xl leading-[1.1] sm:text-5xl">İstatistikler</h1>
+    <dl class="tabular mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
+      {[
+        ["Nüfus", formatNumber(TOTAL_POPULATION)],
+        ["İl yüzölçümleri toplamı", `${formatNumber(TOTAL_AREA)} km²`],
+        ["Nüfus yoğunluğu", `${formatNumber(Math.round(NATIONAL_DENSITY))} kişi/km²`],
+        ["İl / ilçe", `${provinces.length} / ${districts.length}`],
+      ].map(([k, v]) => (
+        <div class="bg-surface p-5"><dt class="text-sm text-text-muted">{k}</dt><dd class="mt-1 font-serif text-2xl font-semibold sm:text-3xl">{v}</dd></div>
+      ))}
+    </dl>
+    <p class="mt-2 text-xs text-text-muted">Kaynak: TÜİK ADNKS {POPULATION_YEAR}, Harita Genel Müdürlüğü.</p>
 
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      İstatistiklerle Türkiye
-    </h1>
-    <p class="prose-content mt-3 max-w-2xl">
-      Nüfus, yüzölçümü, rakım ve komşuluk ilişkileri gibi temel coğrafi
-      istatistiklere göz atın.
-    </p>
-
-    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {
-        homeStatCards.map((s) => (
-          <StatCard
-            icon={s.icon}
-            label={s.label}
-            value={s.value}
-            color={s.color}
-            description={s.description}
-          />
-        ))
-      }
-    </div>
-
-    <section
-      id="nufus"
-      class="mt-12 scroll-mt-32"
-      aria-labelledby="nufus-heading"
-    >
-      <SectionHeader
-        as="h2"
-        id="nufus-heading"
-        eyebrow="Nüfus"
-        title="En Kalabalık İller"
-        href="/istatistikler/en-kalabalik-iller/"
-        linkLabel="Tam Listeyi Gör"
-      />
-      <div class="mt-4 overflow-hidden rounded-2xl border border-border">
-        <table class="w-full text-sm">
-          <tbody class="divide-y divide-border">
-            {
-              topPopulated.map((p, i) => (
-                <tr class="bg-surface">
-                  <td class="w-12 px-4 py-3 font-bold text-text-muted">
-                    {i + 1}
-                  </td>
-                  <td class="px-4 py-3">
-                    <a
-                      href={`/iller/${p.slug}/`}
-                      class="font-semibold text-text-primary hover:text-brand-primary"
-                    >
-                      {p.name}
-                    </a>
-                  </td>
-                  <td class="px-4 py-3 text-right font-bold text-text-primary">
-                    {p.population?.toLocaleString("tr-TR")}
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
+    <ul class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {cards.map((c) => (
+        <li>
+          <a href={c.href} class="card card-hover flex h-full flex-col p-5">
+            <span class="font-serif text-xl font-semibold">{c.title}</span>
+            <span class="mt-3 text-sm text-text-secondary">En yüksek</span>
+            <span class="font-medium">{c.top.name} · <span class="tabular">{c.value}</span></span>
+            <span class="mt-2 text-sm text-text-secondary">En düşük</span>
+            <span class="font-medium">{c.bottom.name}</span>
+            <span class="link mt-auto pt-4 text-sm">Tam sıralama →</span>
+          </a>
+        </li>
+      ))}
+      <li>
+        <a href="/istatistikler/en-kalabalik-ilceler/" class="card card-hover flex h-full flex-col p-5">
+          <span class="font-serif text-xl font-semibold">Nüfusa göre ilçeler</span>
+          <span class="mt-3 text-sm text-text-secondary">En kalabalık</span>
+          <span class="font-medium">{districtsByPopulation[0].name} · <span class="tabular">{formatNumber(districtsByPopulation[0].population ?? 0)}</span></span>
+          <span class="mt-2 text-sm text-text-secondary">973 ilçenin tamamı</span>
+          <span class="link mt-auto pt-4 text-sm">Tam sıralama →</span>
+        </a>
+      </li>
+    </ul>
+    <AdSlot variant="leaderboard" />
+    <section class="mt-12">
+      <h2 class="text-2xl">Mahalle ve mesafe verileri</h2>
+      <ul class="mt-3 flex flex-wrap gap-2">
+        <li><a class="pill" href="/mahalleler/">İllere göre mahalle sayıları</a></li>
+        <li><a class="pill" href="/mesafe/">İller arası mesafe tablosu</a></li>
+        <li><a class="pill" href="/acik-veri/">Açık veri (CSV/JSON)</a></li>
+        <li><a class="pill" href={provincePath("istanbul")}>İstanbul</a></li>
+      </ul>
     </section>
-
-    <section
-      id="yuzolcumu"
-      class="mt-12 scroll-mt-32"
-      aria-labelledby="yuzolcumu-heading"
-    >
-      <SectionHeader
-        as="h2"
-        id="yuzolcumu-heading"
-        eyebrow="Yüzölçümü"
-        title="Yüzölçümüne Göre En Büyük İller"
-        href="/istatistikler/yuzolcumune-gore-en-buyuk-iller/"
-        linkLabel="Tam Listeyi Gör"
-      />
-      <div class="mt-4 overflow-hidden rounded-2xl border border-border">
-        <table class="w-full text-sm">
-          <tbody class="divide-y divide-border">
-            {
-              topArea.map((p, i) => (
-                <tr class="bg-surface">
-                  <td class="w-12 px-4 py-3 font-bold text-text-muted">
-                    {i + 1}
-                  </td>
-                  <td class="px-4 py-3">
-                    <a
-                      href={`/iller/${p.slug}/`}
-                      class="font-semibold text-text-primary hover:text-brand-primary"
-                    >
-                      {p.name}
-                    </a>
-                  </td>
-                  <td class="px-4 py-3 text-right font-bold text-text-primary">
-                    {p.areaKm2?.toLocaleString("tr-TR")} km²
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section
-      id="rakim"
-      class="mt-12 scroll-mt-32"
-      aria-labelledby="rakim-heading"
-    >
-      <h2
-        id="rakim-heading"
-        class="text-xl font-extrabold text-text-primary sm:text-2xl"
-      >
-        Rakım Bilgileri
-      </h2>
-      <p class="prose-content mt-3">
-        Türkiye'nin en yüksek noktası, <strong class="text-text-primary"
-          >5.137 metre</strong
-        > ile Ağrı Dağı'dır. Aşağıda Türkiye'nin önde gelen yükseltileri listelenmiştir.
-      </p>
-      <div class="mt-4 flex flex-col gap-2">
-        {
-          mountains
-            .sort((a, b) => b.elevationM - a.elevationM)
-            .map((m) => (
-              <div class="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
-                <span class="flex items-center gap-2 font-semibold text-text-primary">
-                  <Icon name="mountain" size={15} class="text-brand-primary" />
-                  {m.name}
-                  <span class="font-normal text-text-muted">
-                    ({m.location})
-                  </span>
-                </span>
-                <span class="font-bold text-text-primary">
-                  {m.elevationM.toLocaleString("tr-TR")} m
-                </span>
-              </div>
-            ))
-        }
-      </div>
-    </section>
-
-    <section
-      id="komsu-iller"
-      class="mt-12 scroll-mt-32"
-      aria-labelledby="komsu-iller-heading"
-    >
-      <h2
-        id="komsu-iller-heading"
-        class="text-xl font-extrabold text-text-primary sm:text-2xl"
-      >
-        Komşu İller
-      </h2>
-      <p class="prose-content mt-3">
-        Her il, coğrafi konumuna göre bir veya daha fazla ille sınır komşusudur.
-        Örneğin {sampleNeighborProvince.name},{" "}
-        {sampleNeighborProvince.neighbors?.length ?? 0} ille komşudur. Bir ilin komşularını
-        görmek için o ilin sayfasındaki "Coğrafya" bölümünü inceleyebilirsiniz.
-      </p>
-      <a href="/iller/" class="btn btn-secondary mt-4">
-        Tüm İlleri Görüntüle
-        <Icon name="arrow-right" size={15} />
-      </a>
-    </section>
-
-    <div class="mt-12">
-      <FAQAccordion faqs={faqs} />
-    </div>
-  </PageContainer>
+  </div>
 </BaseLayout>

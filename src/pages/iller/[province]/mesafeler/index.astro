@@ -1,0 +1,108 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SortableTable from "@/components/content/SortableTable.astro";
+import LocatorMap from "@/components/geography/LocatorMap.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { provinces } from "@/data/provinces";
+import { formatNumber } from "@/utils/format";
+import { haversineDistanceKm, compassDirection } from "@/utils/distance";
+import { ablative, genitive } from "@/utils/turkish";
+import { distancePath, provincePath } from "@/utils/links";
+import { webPageSchema, itemListSchema } from "@/utils/seo";
+
+export function getStaticPaths() {
+  return provinces
+    .filter((p) => p.coordinates)
+    .map((p) => ({ params: { province: p.slug }, props: { province: p } }));
+}
+
+const { province } = Astro.props as { province: (typeof provinces)[number] };
+const path = `/iller/${province.slug}/mesafeler/`;
+const rows = provinces
+  .filter((o) => o.slug !== province.slug && o.coordinates)
+  .map((o) => ({
+    o,
+    km: haversineDistanceKm(province.coordinates!, o.coordinates!),
+    dir: compassDirection(province.coordinates!, o.coordinates!),
+  }))
+  .sort((x, y) => x.km - y.km);
+const nearest = rows[0];
+const farthest = rows[rows.length - 1];
+
+const title = `${ablative(province.name)} Tüm İllere Mesafe (Km) — 80 İl Listesi`;
+const description = `${ablative(province.name)} Türkiye'nin diğer 80 iline kuş uçuşu mesafeler. En yakın il ${nearest.o.name} (${formatNumber(Math.round(nearest.km))} km), en uzak il ${farthest.o.name} (${formatNumber(Math.round(farthest.km))} km).`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  image={`/og/provinces/${province.slug}.jpg`}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    itemListSchema(
+      rows.map((r) => ({
+        name: `${province.name} – ${r.o.name}`,
+        href: distancePath(province.slug, r.o.slug),
+      })),
+    ),
+  ]}
+>
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs
+      items={[
+        { label: "İller", href: "/iller/" },
+        { label: province.name, href: provincePath(province.slug) },
+        { label: "Mesafeler", href: path },
+      ]}
+    />
+    <div class="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <article class="min-w-0">
+        <h1 class="text-4xl leading-[1.1] sm:text-5xl">
+          {ablative(province.name)} tüm illere mesafe
+        </h1>
+        <p class="answer-box mt-6">
+          {genitive(province.name)} en yakın il merkezi{" "}
+          {formatNumber(Math.round(nearest.km))} km ile {nearest.o.name}, en
+          uzak il merkezi {formatNumber(Math.round(farthest.km))} km ile{" "}
+          {farthest.o.name}. Aşağıdaki tabloda 80 ilin tamamına kuş uçuşu
+          mesafe yer alır; il adına dokunarak karayolu tahmini ve sürüş
+          süresini görebilirsiniz.
+        </p>
+        <AdSlot variant="in-article" />
+        <SortableTable
+          class="mt-6"
+          id="mesafe-tablosu"
+          rank
+          caption={`${ablative(province.name)} diğer illere kuş uçuşu mesafeler`}
+          columns={[
+            { key: "il", label: "İl" },
+            { key: "km", label: "Kuş uçuşu (km)", numeric: true },
+            { key: "yon", label: "Yön" },
+          ]}
+          rows={rows.map((r) => ({
+            il: {
+              text: r.o.name,
+              sort: r.o.name,
+              href: distancePath(province.slug, r.o.slug),
+            },
+            km: { text: formatNumber(Math.round(r.km)), sort: r.km },
+            yon: { text: r.dir, sort: r.dir },
+          }))}
+        />
+      </article>
+      <aside>
+        <div class="card p-4 lg:sticky lg:top-24">
+          <LocatorMap
+            highlight={[province.slug]}
+            label={`${genitive(province.name)} konumu`}
+          />
+          <a href={provincePath(province.slug)} class="link mt-3 inline-block text-sm"
+            >{province.name} il sayfası →</a
+          >
+        </div>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>

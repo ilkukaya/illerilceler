@@ -1,0 +1,132 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import QuickLookups from "@/components/search/QuickLookups.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { provinces, getProvinceBySlug } from "@/data/provinces";
+import { formatNumber } from "@/utils/format";
+import { haversineDistanceKm } from "@/utils/distance";
+import { distancePath } from "@/utils/links";
+import { ablative } from "@/utils/turkish";
+import { webPageSchema } from "@/utils/seo";
+
+const big = ["istanbul", "ankara", "izmir", "bursa", "antalya", "adana", "konya", "gaziantep"];
+const popularPairs: [string, string][] = [
+  ["ankara", "istanbul"],
+  ["istanbul", "izmir"],
+  ["ankara", "izmir"],
+  ["antalya", "istanbul"],
+  ["ankara", "antalya"],
+  ["bursa", "istanbul"],
+  ["ankara", "konya"],
+  ["adana", "ankara"],
+  ["istanbul", "trabzon"],
+  ["ankara", "samsun"],
+  ["diyarbakir", "istanbul"],
+  ["gaziantep", "istanbul"],
+  ["eskisehir", "istanbul"],
+  ["ankara", "kayseri"],
+  ["izmir", "antalya"],
+  ["erzurum", "istanbul"],
+];
+const km = (a: string, b: string) =>
+  Math.round(
+    haversineDistanceKm(
+      getProvinceBySlug(a)!.coordinates!,
+      getProvinceBySlug(b)!.coordinates!,
+    ),
+  );
+const alphabetical = [...provinces].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const title = "İller Arası Mesafe: Türkiye Şehirler Arası Km Tablosu";
+const description =
+  "Türkiye'nin 81 ili arasındaki kuş uçuşu mesafeler, tahmini karayolu mesafesi ve sürüş süresi. 3.240 il çifti için ayrı sayfa, büyük şehirler mesafe tablosu.";
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path="/mesafe/"
+  schema={webPageSchema({ name: title, path: "/mesafe/", description })}
+>
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs items={[{ label: "Mesafe", href: "/mesafe/" }]} />
+    <header class="mt-5 max-w-3xl">
+      <h1 class="text-4xl leading-[1.1] sm:text-5xl">İller arası mesafe</h1>
+      <p class="mt-3 text-lg text-text-secondary">
+        İki il seçin; kuş uçuşu mesafe, tahmini karayolu mesafesi, sürüş süresi
+        ve iki ilin karşılaştırmasını görün.
+      </p>
+    </header>
+    <div class="mt-6 max-w-4xl"><QuickLookups /></div>
+
+    <section class="mt-12">
+      <h2 class="text-2xl sm:text-3xl">Çok aranan güzergâhlar</h2>
+      <ul class="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          popularPairs.map(([a, b]) => (
+            <li class="flex justify-between gap-3 border-b border-border py-2.5">
+              <a href={distancePath(a, b)} class="font-medium hover:text-brand-primary hover:underline">
+                {getProvinceBySlug(a)!.name} – {getProvinceBySlug(b)!.name}
+              </a>
+              <span class="tabular text-text-secondary">{formatNumber(km(a, b))} km</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <AdSlot variant="leaderboard" />
+
+    <section class="mt-12">
+      <h2 class="text-2xl sm:text-3xl">Büyük şehirler mesafe tablosu (km)</h2>
+      <p class="mt-1 text-sm text-text-secondary">Kuş uçuşu, il merkezleri arası.</p>
+      <div class="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              {big.map((s) => <th scope="col" class="num">{getProvinceBySlug(s)!.name}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {
+              big.map((r) => (
+                <tr>
+                  <th scope="row" class="!normal-case !text-sm !font-semibold !text-text-primary">
+                    {getProvinceBySlug(r)!.name}
+                  </th>
+                  {big.map((c) =>
+                    c === r ? (
+                      <td class="num text-text-muted">—</td>
+                    ) : (
+                      <td class="num">
+                        <a href={distancePath(r, c)} class="hover:text-brand-primary hover:underline">
+                          {formatNumber(km(r, c))}
+                        </a>
+                      </td>
+                    ),
+                  )}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mt-12">
+      <h2 class="text-2xl sm:text-3xl">Bir ilden tüm illere mesafe</h2>
+      <ul class="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-3 lg:grid-cols-5">
+        {
+          alphabetical.map((p) => (
+            <li>
+              <a href={`/iller/${p.slug}/mesafeler/`} class="text-text-secondary hover:text-text-primary">
+                {ablative(p.name)}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

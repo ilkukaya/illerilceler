@@ -1,0 +1,126 @@
+---
+/**
+ * Three instant lookups for the most common questions ("47 nerenin
+ * plakası?", "0312 nerenin kodu?", "Ankara İstanbul arası kaç km?").
+ * Plain GET forms that work without JS; the script just routes to the
+ * canonical URL directly.
+ */
+import { provinces } from "@/data/provinces";
+
+const sorted = [...provinces].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const areaCodes = provinces.flatMap((p) => p.areaCodes).join(",");
+---
+
+<div class="grid gap-3 sm:grid-cols-2">
+  <form
+    class="ql card flex items-center gap-2 p-2 pl-3"
+    action="/arama/"
+    data-kind="plate"
+  >
+    <label for="ql-plate" class="shrink-0 text-sm text-text-secondary"
+      >Plaka</label
+    >
+    <input
+      id="ql-plate"
+      name="q"
+      inputmode="numeric"
+      maxlength="2"
+      pattern="[0-9]{1,2}"
+      placeholder="47"
+      class="tabular h-10 w-full min-w-0 rounded-md bg-surface-muted px-3 text-base font-semibold outline-none focus:ring-2 focus:ring-brand-primary"
+      aria-label="Plaka kodu (01–81)"
+    />
+    <button class="btn btn-primary !min-h-10 !px-3" aria-label="Plakayı bul"
+      >Bul</button
+    >
+  </form>
+  <form
+    class="ql card flex items-center gap-2 p-2 pl-3"
+    action="/arama/"
+    data-kind="area"
+    data-codes={areaCodes}
+  >
+    <label for="ql-area" class="shrink-0 text-sm text-text-secondary"
+      >Alan kodu</label
+    >
+    <input
+      id="ql-area"
+      name="q"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="0312"
+      class="tabular h-10 w-full min-w-0 rounded-md bg-surface-muted px-3 text-base font-semibold outline-none focus:ring-2 focus:ring-brand-primary"
+      aria-label="Telefon alan kodu"
+    />
+    <button class="btn btn-primary !min-h-10 !px-3" aria-label="Alan kodunu bul"
+      >Bul</button
+    >
+  </form>
+  <form
+    class="ql card flex items-center gap-2 p-2 pl-3 sm:col-span-2"
+    action="/mesafe/"
+    data-kind="distance"
+  >
+    <span class="shrink-0 text-sm text-text-secondary">Mesafe</span>
+    <label class="sr-only" for="ql-from">Nereden</label>
+    <select
+      id="ql-from"
+      name="a"
+      class="h-10 w-full min-w-0 rounded-md bg-surface-muted px-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary"
+    >
+      {
+        sorted.map((p) => (
+          <option value={p.slug} selected={p.slug === "ankara"}>
+            {p.name}
+          </option>
+        ))
+      }
+    </select>
+    <label class="sr-only" for="ql-to">Nereye</label>
+    <select
+      id="ql-to"
+      name="b"
+      class="h-10 w-full min-w-0 rounded-md bg-surface-muted px-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary"
+    >
+      {
+        sorted.map((p) => (
+          <option value={p.slug} selected={p.slug === "istanbul"}>
+            {p.name}
+          </option>
+        ))
+      }
+    </select>
+    <button class="btn btn-primary !min-h-10 !px-3" aria-label="Mesafeyi göster"
+      >km</button
+    >
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>("form.ql").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      const kind = form.dataset.kind;
+      if (kind === "plate") {
+        const v = (form.elements.namedItem("q") as HTMLInputElement).value.replace(/\D/g, "");
+        const n = Number(v);
+        if (n >= 1 && n <= 81) {
+          e.preventDefault();
+          location.href = `/plaka-kodlari/${String(n).padStart(2, "0")}/`;
+        }
+      } else if (kind === "area") {
+        const v = (form.elements.namedItem("q") as HTMLInputElement).value.replace(/\D/g, "").replace(/^0/, "");
+        if ((form.dataset.codes ?? "").split(",").includes(v)) {
+          e.preventDefault();
+          location.href = `/alan-kodlari/${v}/`;
+        }
+      } else if (kind === "distance") {
+        e.preventDefault();
+        const a = (form.elements.namedItem("a") as HTMLSelectElement).value;
+        const b = (form.elements.namedItem("b") as HTMLSelectElement).value;
+        if (a === b) return;
+        const [x, y] = [a, b].sort();
+        location.href = `/mesafe/${x}-${y}/`;
+      }
+    });
+  });
+</script>

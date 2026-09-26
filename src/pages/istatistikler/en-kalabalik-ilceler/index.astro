@@ -1,0 +1,84 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import SortableTable from "@/components/content/SortableTable.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { getProvinceBySlug } from "@/data/provinces";
+import { formatNumber } from "@/utils/format";
+import {
+  districtsByPopulation as r,
+  districtsByArea,
+  density,
+  POPULATION_YEAR,
+} from "@/utils/rankings";
+import { copula } from "@/utils/turkish";
+import { districtPath, provincePath } from "@/utils/links";
+import { webPageSchema, itemListSchema, faqPageSchema } from "@/utils/seo";
+
+const path = "/istatistikler/en-kalabalik-ilceler/";
+const prov = (slug: string) => getProvinceBySlug(slug)!;
+const last = r[r.length - 1];
+const over500k = r.filter((d) => (d.population ?? 0) >= 500000).length;
+const intro = `TÜİK ${POPULATION_YEAR} verilerine göre Türkiye'nin en kalabalık ilçesi ${formatNumber(r[0].population!)} kişiyle ${prov(r[0].provinceSlug).name} iline bağlı ${copula(r[0].name)}. Onu ${r[1].name} (${prov(r[1].provinceSlug).name}, ${formatNumber(r[1].population!)}) ve ${r[2].name} (${prov(r[2].provinceSlug).name}, ${formatNumber(r[2].population!)}) izler. Nüfusu 500 bini aşan ${over500k} ilçe vardır. En az nüfuslu ilçe ise ${formatNumber(last.population!)} kişiyle ${prov(last.provinceSlug).name} iline bağlı ${copula(last.name)}.`;
+const faqs = [
+  { question: "Türkiye'nin en kalabalık ilçesi hangisidir?", answer: `${formatNumber(r[0].population!)} kişiyle ${prov(r[0].provinceSlug).name} iline bağlı ${copula(r[0].name)}.` },
+  { question: "Türkiye'nin en az nüfuslu ilçesi hangisidir?", answer: `${formatNumber(last.population!)} kişiyle ${prov(last.provinceSlug).name} iline bağlı ${copula(last.name)}.` },
+  { question: "Yüzölçümü en büyük ilçe hangisidir?", answer: `${formatNumber(districtsByArea[0].areaKm2!)} km² ile ${prov(districtsByArea[0].provinceSlug).name} iline bağlı ${copula(districtsByArea[0].name)}.` },
+];
+const rows = r.map((d) => {
+  const dd = density(d.population, d.areaKm2);
+  return {
+    ilce: { text: d.name, sort: d.name, href: districtPath(d.provinceSlug, d.slug) },
+    il: { text: prov(d.provinceSlug).name, sort: prov(d.provinceSlug).name, href: provincePath(d.provinceSlug) },
+    nufus: { text: d.population ? formatNumber(d.population) : "—", sort: d.population ?? 0 },
+    alan: { text: d.areaKm2 ? formatNumber(d.areaKm2) : "—", sort: d.areaKm2 ?? 0 },
+    yogunluk: { text: dd ? formatNumber(Math.round(dd)) : "—", sort: dd ?? 0 },
+  };
+});
+const title = `Türkiye'nin En Kalabalık İlçeleri ${POPULATION_YEAR} — 973 İlçe Nüfus Sıralaması`;
+const description = `973 ilçenin TÜİK ${POPULATION_YEAR} nüfusuna göre sıralaması. En kalabalık ilçe ${r[0].name} (${formatNumber(r[0].population!)}). Yüzölçümü ve yoğunlukla birlikte tam tablo.`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    itemListSchema(r.slice(0, 100).map((d) => ({ name: `${d.name}, ${prov(d.provinceSlug).name}`, href: districtPath(d.provinceSlug, d.slug) }))),
+    faqPageSchema(faqs),
+  ]}
+>
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs
+      items={[
+        { label: "İstatistikler", href: "/istatistikler/" },
+        { label: "En kalabalık ilçeler", href: path },
+      ]}
+    />
+    <header class="mt-5 max-w-3xl">
+      <p class="section-eyebrow">973 ilçe · TÜİK {POPULATION_YEAR}</p>
+      <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">
+        Nüfusa göre ilçeler
+      </h1>
+    </header>
+    <p class="answer-box mt-6 max-w-3xl">{intro}</p>
+    <AdSlot variant="leaderboard" />
+    <SortableTable
+      class="mt-8"
+      id="ilce-siralama"
+      rank
+      caption="Türkiye'deki 973 ilçenin nüfus sıralaması"
+      columns={[
+        { key: "ilce", label: "İlçe" },
+        { key: "il", label: "İl" },
+        { key: "nufus", label: "Nüfus", numeric: true },
+        { key: "alan", label: "km²", numeric: true },
+        { key: "yogunluk", label: "Kişi/km²", numeric: true },
+      ]}
+      rows={rows}
+    />
+    <div class="mt-12 max-w-3xl"><FAQAccordion faqs={faqs} /></div>
+  </div>
+</BaseLayout>

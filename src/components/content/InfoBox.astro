@@ -1,0 +1,64 @@
+---
+/**
+ * Encyclopedia-style fact box ("infobox"): locator map + key/value facts.
+ * Rendered as a <dl> so the label/value pairs are machine-readable.
+ */
+import LocatorMap from "@/components/geography/LocatorMap.astro";
+
+interface Row {
+  label: string;
+  value: string;
+  href?: string;
+}
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  rows: Row[];
+  map?: {
+    highlight: string[];
+    secondary?: string[];
+    dot?: { lat: number; lng: number };
+    label: string;
+  };
+  class?: string;
+}
+
+const { title, subtitle, rows, map, class: className = "" } = Astro.props;
+const visible = rows.filter((r) => r.value && r.value !== "—");
+---
+
+<aside
+  class={`overflow-hidden rounded-xl border border-border bg-surface ${className}`}
+  aria-label={`${title} künyesi`}
+>
+  {
+    map && (
+      <div class="border-b border-border px-4 py-4">
+        <LocatorMap {...map} />
+      </div>
+    )
+  }
+  <div class="px-4 pb-1 pt-3">
+    <p class="font-serif text-lg font-semibold text-text-primary">{title}</p>
+    {subtitle && <p class="text-xs text-text-muted">{subtitle}</p>}
+  </div>
+  <dl class="tabular px-4 pb-3 text-sm">
+    {
+      visible.map((r) => (
+        <div class="flex items-baseline justify-between gap-4 border-b border-border py-2 last:border-0">
+          <dt class="text-text-secondary">{r.label}</dt>
+          <dd class="text-right font-medium text-text-primary">
+            {r.href ? (
+              <a href={r.href} class="link">
+                {r.value}
+              </a>
+            ) : (
+              r.value
+            )}
+          </dd>
+        </div>
+      ))
+    }
+  </dl>
+</aside>

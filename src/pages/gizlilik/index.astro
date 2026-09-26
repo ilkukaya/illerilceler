@@ -1,79 +1,83 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
-import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import LegalLayout from "@/layouts/LegalLayout.astro";
 import { siteConfig } from "@/config/site";
-
-const path = "/gizlilik/";
 ---
 
-<BaseLayout
-  title="Gizlilik Politikası"
-  description="illerilceler.com gizlilik politikası."
-  path={path}
+<LegalLayout
+  title="Gizlilik politikası"
+  description="İller İlçeler gizlilik politikası: hangi verilerin işlendiği, çerezler, Google reklam ve analiz hizmetleri, KVKK kapsamındaki haklarınız."
+  path="/gizlilik/"
+  updated="26 Eylül 2026"
 >
-  <PageContainer class="py-4">
-    <Breadcrumbs items={[{ label: "Gizlilik Politikası", href: path }]} />
-  </PageContainer>
+  <p>
+    Bu politika, <strong>{siteConfig.name}</strong> ("Site") ziyaretleriniz sırasında hangi verilerin
+    işlendiğini ve 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamındaki haklarınızı
+    açıklar.
+  </p>
 
-  <PageContainer class="max-w-3xl pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary">
-      Gizlilik Politikası
-    </h1>
-    <p class="mt-2 text-sm text-text-muted">Son güncelleme: Ocak 2026</p>
+  <h2>1. Topladığımız veriler</h2>
+  <p>
+    Site üyelik gerektirmez; ad, e-posta gibi bilgileri yalnızca bize kendiniz yazdığınızda alırız.
+    Ziyaretiniz sırasında tarayıcınızın otomatik ilettiği teknik veriler (IP adresi, tarayıcı ve cihaz
+    türü, ziyaret edilen sayfalar, ziyaret zamanı) barındırma sağlayıcımız ve — onay vermeniz
+    hâlinde — analiz hizmetimiz tarafından işlenebilir.
+  </p>
 
-    <div class="prose-content mt-8 flex flex-col gap-6">
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">
-          1. Genel Bilgilendirme
-        </h2>
-        <p class="mt-2">
-          {siteConfig.name} ("Platform") olarak ziyaretçilerimizin gizliliğine önem
-          veriyoruz. Bu Gizlilik Politikası, Platform'u kullanırken hangi verilerin
-          nasıl işlendiğini açıklamaktadır.
-        </p>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">2. Toplanan Veriler</h2>
-        <p class="mt-2">
-          Platform, üyelik veya hesap oluşturma gerektirmez. Ziyaretiniz
-          sırasında tarayıcınız tarafından otomatik olarak iletilen standart
-          teknik veriler (IP adresi, tarayıcı türü, ziyaret edilen sayfalar,
-          ziyaret süresi gibi) anonim istatistik ve site performansını
-          iyileştirme amacıyla işlenebilir.
-        </p>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">3. Çerezler</h2>
-        <p class="mt-2">
-          Tema tercihi ve favoriler gibi işlevler için tarayıcınızın yerel
-          depolama alanı kullanılır. Detaylı bilgi için
-          <a
-            href="/cerez-politikasi/"
-            class="font-semibold text-brand-primary hover:underline"
-            >Çerez Politikası</a
-          > sayfamızı inceleyebilirsiniz.
-        </p>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">
-          4. Üçüncü Taraf Hizmetler
-        </h2>
-        <p class="mt-2">
-          Platform'da yer alabilecek reklam alanları ve analitik araçlar, ilgili
-          üçüncü taraf sağlayıcıların kendi gizlilik politikalarına tabidir.
-        </p>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">5. İletişim</h2>
-        <p class="mt-2">
-          Gizlilik politikamızla ilgili sorularınız için <a
-            href="/iletisim/"
-            class="font-semibold text-brand-primary hover:underline">İletişim</a
-          >
-          sayfamızdan bize ulaşabilirsiniz.
-        </p>
-      </section>
-    </div>
-  </PageContainer>
-</BaseLayout>
+  <h2>2. Çerezler ve yerel depolama</h2>
+  <p>
+    Tema tercihi ve çerez onayınız tarayıcınızın yerel depolama alanında saklanır. Analiz ve reklam
+    çerezleri yalnızca çerez bildirimindeki onayınızla kişiselleştirme amacıyla kullanılır. Ayrıntılar
+    için <a href="/cerez-politikasi/">Çerez politikası</a> sayfasına bakın.
+  </p>
+
+  <h2>3. Google reklam ve analiz hizmetleri</h2>
+  <ul>
+    <li>
+      Google dahil üçüncü taraf sağlayıcılar, bu sitede ve diğer sitelerde yaptığınız önceki
+      ziyaretlere dayanarak reklam sunmak için çerez kullanır.
+    </li>
+    <li>
+      Google'ın reklam çerezlerini kullanması, Google'ın ve iş ortaklarının bu siteye ve/veya
+      internetteki diğer sitelere yaptığınız ziyaretlere göre size reklam sunmasını sağlar.
+    </li>
+    <li>
+      Kişiselleştirilmiş reklamcılığı
+      <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Reklam Ayarları</a>
+      sayfasından devre dışı bırakabilirsiniz. Üçüncü taraf sağlayıcıların çerezlerini
+      <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">www.aboutads.info</a>
+      adresinden devre dışı bırakabilirsiniz.
+    </li>
+    <li>
+      Google'ın verileri nasıl kullandığına ilişkin bilgi:
+      <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com/technologies/partner-sites</a>.
+    </li>
+    <li>
+      Site trafiğini ölçmek için Google Analytics kullanılabilir; IP adresleri anonimleştirilir ve
+      onay vermediğiniz sürece analiz çerezleri yerleştirilmez.
+    </li>
+  </ul>
+
+  <h2>4. İş ortaklığı (affiliate) bağlantıları</h2>
+  <p>
+    Bazı sayfalarda otel, bilet veya araç kiralama sitelerine bağlantılar bulunur. Bu bağlantılar
+    üzerinden rezervasyon yaparsanız size ek maliyet olmadan komisyon alabiliriz. Bu durumda ilgili
+    sitenin gizlilik politikası geçerlidir; bu bağlantılar "Sponsorlu" olarak işaretlenir.
+  </p>
+
+  <h2>5. Verilerin aktarımı ve saklama</h2>
+  <p>
+    Site, Netlify altyapısında barındırılır; sunucu kayıtları ve (onaylı) analiz/reklam verileri yurt
+    dışında bulunan bu hizmet sağlayıcıların sunucularında işlenebilir. Verilerinizi satmayız.
+  </p>
+
+  <h2>6. KVKK kapsamındaki haklarınız</h2>
+  <p>
+    KVKK'nın 11. maddesi uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme,
+    düzeltilmesini veya silinmesini isteme ve işlemeye itiraz etme haklarına sahipsiniz. Taleplerinizi
+    <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a> adresine
+    iletebilirsiniz.
+  </p>
+
+  <h2>7. Değişiklikler</h2>
+  <p>Bu politika güncellenebilir; güncel sürüm her zaman bu sayfada yayımlanır.</p>
+</LegalLayout>
