@@ -81,6 +81,12 @@ gerektirmeyecek şekilde yazılmıştır.
 > "Trigger deploy" demeniz yeterli; kod değişikliği gerekmez. İsterseniz kodları bana verin, ben
 > ekleyeyim.
 
+0. **Netlify'ı GitHub'a bağlayın (yeni tasarımın yayına çıkması için gerekli, 2 dakika).**
+   Şu anki canlı sürüm GitHub'a bağlı değil, elle yüklenmiş. Netlify → projeniz →
+   **Project configuration → Build & deploy → Continuous deployment → Link repository** →
+   GitHub → `ilkukaya/illerilceler` → Production branch: `claude/illerilceler-platform-8ltnhb`.
+   Build ayarları `netlify.toml` dosyasından otomatik okunur (komut: `npm run build`, klasör:
+   `dist`). Bundan sonra her birleştirme otomatik yayınlanır.
 1. **Alan adını bağlayın (en önemli adım).** `illerilceler.com` size aitse: Netlify → Domain
    management → Add a domain → `illerilceler.com`. Alan adı sağlayıcınızda Netlify'ın verdiği DNS
    kayıtlarını girin. HTTPS otomatik gelir. Ardından ortam değişkeni:
