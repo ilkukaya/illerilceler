@@ -1,9 +1,13 @@
 ---
 /**
- * Non-intrusive ad placeholder with a fixed reserved height (no CLS once a
- * real ad network script is wired in). Swap the inner placeholder markup
- * for your ad network's slot code when ready — see README "Reklam Alanları".
+ * Ad placement. Renders a real AdSense unit (with reserved height, so no layout
+ * shift) once PUBLIC_ADSENSE_CLIENT + a slot id are configured. Until then it
+ * renders nothing in production — no empty "Reklam" boxes on the live site —
+ * and a labelled outline in `astro dev` so placements stay visible while
+ * designing. See src/config/monetization.ts.
  */
+import { monetization, adsEnabled } from "@/config/monetization";
+
 interface Props {
   variant?: "leaderboard" | "rectangle" | "sidebar" | "in-article";
   class?: string;
@@ -11,22 +15,49 @@ interface Props {
 
 const { variant = "leaderboard", class: className = "" } = Astro.props;
 
-const heights: Record<string, string> = {
-  leaderboard: "min-h-[90px]",
-  rectangle: "min-h-[250px] max-w-[300px] mx-auto",
-  sidebar: "min-h-[400px]",
-  "in-article": "min-h-[120px]",
+const slot =
+  monetization.adSlots[variant] || monetization.adSlots.default || "";
+const live = adsEnabled && Boolean(slot);
+const showPlaceholder = !live && import.meta.env.DEV;
+
+const minHeights: Record<string, string> = {
+  leaderboard: "min-h-[100px] sm:min-h-[90px]",
+  rectangle: "min-h-[280px]",
+  sidebar: "min-h-[600px]",
+  "in-article": "min-h-[280px] sm:min-h-[200px]",
 };
 ---
 
-<div
-  class:list={[
-    "flex w-full items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface-muted text-center",
-    heights[variant],
-    className,
-  ]}
-  aria-label="Reklam alanı"
-  role="complementary"
->
-  <span class="px-4 text-xs font-medium text-text-muted">Reklam</span>
-</div>
+{
+  live && (
+    <aside
+      class:list={["ad-slot my-8 w-full", minHeights[variant], className]}
+      aria-label="Reklam"
+    >
+      <p class="mb-1 text-center text-[10px] uppercase tracking-wider text-text-muted">
+        Reklam
+      </p>
+      <ins
+        class="adsbygoogle block"
+        style="display:block"
+        data-ad-client={monetization.adsenseClient}
+        data-ad-slot={slot}
+        data-ad-format={variant === "sidebar" ? "vertical" : "auto"}
+        data-full-width-responsive="true"
+      />
+    </aside>
+  )
+}
+{
+  showPlaceholder && (
+    <div
+      class:list={[
+        "my-8 flex w-full items-center justify-center rounded-lg border border-dashed border-border-strong text-xs text-text-muted",
+        minHeights[variant],
+        className,
+      ]}
+    >
+      Reklam alanı ({variant}) — yalnızca geliştirmede görünür
+    </div>
+  )
+}

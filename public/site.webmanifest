@@ -1,12 +1,16 @@
 {
-  "name": "illerilceler.com — Türkiye Bilgi Merkezi",
-  "short_name": "İllerİlçeler",
-  "description": "Türkiye'nin illeri, ilçeleri, mahalleleri, plaka ve alan kodları hakkında bilgi merkezi.",
+  "name": "İller İlçeler — Türkiye'nin 81 İli ve 973 İlçesi",
+  "short_name": "İller İlçeler",
+  "description": "Türkiye'nin illeri ve ilçeleri: nüfus, yüzölçümü, plaka, alan ve posta kodları, harita ve mesafeler.",
+  "lang": "tr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F7F8FC",
-  "theme_color": "#635BFF",
+  "background_color": "#F7F6F2",
+  "theme_color": "#C8102E",
   "icons": [
-    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

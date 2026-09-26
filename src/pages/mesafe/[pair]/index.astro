@@ -1,0 +1,286 @@
+---
+/**
+ * One page per province pair (81 × 80 / 2 = 3,240): "Ankara İstanbul arası
+ * kaç km?" The straight-line distance is exact (Haversine between official
+ * city-centre coordinates); road distance and drive time are clearly labelled
+ * estimates, never presented as routing data.
+ */
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import LocatorMap from "@/components/geography/LocatorMap.astro";
+import TravelLinks from "@/components/content/TravelLinks.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { provinces, getProvinceBySlug } from "@/data/provinces";
+import { getRegion } from "@/data/regions";
+import { formatNumber, formatArea } from "@/utils/format";
+import {
+  haversineDistanceKm,
+  compassDirection,
+  ROAD_FACTOR_RANGE,
+  formatDuration,
+} from "@/utils/distance";
+import { nearestProvinces } from "@/utils/rankings";
+import { genitive, ablative, dative } from "@/utils/turkish";
+import { distancePath, provincePath } from "@/utils/links";
+import { faqPageSchema, webPageSchema } from "@/utils/seo";
+import type { Province } from "@/types";
+
+export function getStaticPaths() {
+  const withCoords = provinces.filter((p) => p.coordinates);
+  const paths = [];
+  for (let i = 0; i < withCoords.length; i++) {
+    for (let j = i + 1; j < withCoords.length; j++) {
+      const [a, b] = [withCoords[i], withCoords[j]].sort((x, y) =>
+        x.slug.localeCompare(y.slug),
+      );
+      paths.push({
+        params: { pair: `${a.slug}-${b.slug}` },
+        props: { aSlug: a.slug, bSlug: b.slug },
+      });
+    }
+  }
+  return paths;
+}
+
+const { aSlug, bSlug } = Astro.props as { aSlug: string; bSlug: string };
+// Put the larger city first in copy ("İstanbul Ankara" reads more natural
+// than alphabetical order) — the URL stays alphabetical/canonical.
+const pair = [getProvinceBySlug(aSlug)!, getProvinceBySlug(bSlug)!].sort(
+  (x, y) => (y.population ?? 0) - (x.population ?? 0),
+) as [Province, Province];
+const [a, b] = pair;
+const km = haversineDistanceKm(a.coordinates!, b.coordinates!);
+const kmR = Math.round(km);
+const roadMin = Math.round((km * ROAD_FACTOR_RANGE[0]) / 10) * 10;
+const roadMax = Math.round((km * ROAD_FACTOR_RANGE[1]) / 10) * 10;
+const driveMin = formatDuration(roadMin / 90);
+const driveMax = formatDuration(roadMax / 80);
+const dir = compassDirection(a.coordinates!, b.coordinates!);
+const isNeighbor = (a.neighbors ?? []).includes(b.slug);
+const path = distancePath(a.slug, b.slug);
+const regionA = getRegion(a.region);
+const regionB = getRegion(b.region);
+
+const otherFromA = nearestProvinces(a, 6).filter((x) => x.province.slug !== b.slug).slice(0, 5);
+const otherFromB = nearestProvinces(b, 6).filter((x) => x.province.slug !== a.slug).slice(0, 5);
+
+const DIRECTION_LOCATIVE: Record<string, string> = {
+  kuzey: "kuzeyinde",
+  kuzeydoğu: "kuzeydoğusunda",
+  doğu: "doğusunda",
+  güneydoğu: "güneydoğusunda",
+  güney: "güneyinde",
+  güneybatı: "güneybatısında",
+  batı: "batısında",
+  kuzeybatı: "kuzeybatısında",
+};
+
+const faqs = [
+  {
+    question: `${a.name} ${b.name} arası kaç km?`,
+    answer: `${a.name} ile ${b.name} il merkezleri arasındaki kuş uçuşu mesafe yaklaşık ${formatNumber(kmR)} km'dir. Karayoluyla mesafe güzergâha göre değişmekle birlikte genellikle ${formatNumber(roadMin)}–${formatNumber(roadMax)} km aralığındadır.`,
+  },
+  {
+    question: `${ablative(a.name)} ${dative(b.name)} arabayla kaç saat sürer?`,
+    answer: `Tahmini karayolu mesafesi ve ortalama 80–90 km/sa hızla yolculuk yaklaşık ${driveMin} ile ${driveMax} arasında sürer. Mola, trafik ve yol çalışmaları süreyi uzatabilir; yola çıkmadan önce güncel navigasyon uygulamasından kontrol edin.`,
+  },
+  {
+    question: `${b.name}, ${genitive(a.name)} hangi yönündedir?`,
+    answer: `${b.name}, ${genitive(a.name)} ${DIRECTION_LOCATIVE[dir] ?? dir} yer alır.`,
+  },
+  {
+    question: `${a.name} ile ${b.name} komşu mu?`,
+    answer: isNeighbor
+      ? `Evet, ${a.name} ile ${b.name} komşu illerdir ve ortak sınırları vardır.`
+      : `Hayır, ${a.name} ile ${b.name} arasında ortak sınır yoktur.`,
+  },
+];
+
+const title = `${a.name} ${b.name} Arası Kaç Km? Mesafe ve Yol Süresi`;
+const description = `${a.name} ile ${b.name} arası kuş uçuşu ${formatNumber(kmR)} km; karayoluyla yaklaşık ${formatNumber(roadMin)}–${formatNumber(roadMax)} km, arabayla ${driveMin}–${driveMax}. Harita, yön ve iki ilin karşılaştırması.`;
+
+const compareRows = [
+  { label: "Bölge", a: regionA?.name ?? "—", b: regionB?.name ?? "—" },
+  { label: "Plaka kodu", a: a.plateCode, b: b.plateCode },
+  {
+    label: "Alan kodu",
+    a: a.areaCodes.map((c) => `0${c}`).join(", "),
+    b: b.areaCodes.map((c) => `0${c}`).join(", "),
+  },
+  {
+    label: "Nüfus",
+    a: a.population ? formatNumber(a.population) : "—",
+    b: b.population ? formatNumber(b.population) : "—",
+  },
+  { label: "Yüzölçümü", a: formatArea(a.areaKm2), b: formatArea(b.areaKm2) },
+  {
+    label: "İlçe sayısı",
+    a: String(a.districtCount ?? "—"),
+    b: String(b.districtCount ?? "—"),
+  },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  image={`/og/provinces/${b.slug}.jpg`}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    faqPageSchema(faqs),
+  ]}
+>
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs
+      items={[
+        { label: "Mesafe", href: "/mesafe/" },
+        { label: `${a.name} – ${b.name}`, href: path },
+      ]}
+    />
+
+    <div class="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <article class="min-w-0">
+        <p class="section-eyebrow">İller arası mesafe</p>
+        <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">
+          {a.name} – {b.name} arası kaç km?
+        </h1>
+
+        <dl class="tabular mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div class="card p-4">
+            <dt class="text-sm text-text-secondary">Kuş uçuşu</dt>
+            <dd class="mt-1 font-serif text-4xl font-semibold">
+              {formatNumber(kmR)} <span class="text-xl">km</span>
+            </dd>
+          </div>
+          <div class="card p-4">
+            <dt class="text-sm text-text-secondary">Karayolu (tahmini)</dt>
+            <dd class="mt-1 font-serif text-2xl font-semibold sm:text-3xl">
+              {formatNumber(roadMin)}–{formatNumber(roadMax)} km
+            </dd>
+          </div>
+          <div class="card col-span-2 p-4 sm:col-span-1">
+            <dt class="text-sm text-text-secondary">Arabayla (tahmini)</dt>
+            <dd class="mt-1 font-serif text-2xl font-semibold">
+              {driveMin} – {driveMax}
+            </dd>
+          </div>
+        </dl>
+
+        <p class="answer-box mt-6">
+          {a.name} ile {b.name} il merkezleri arasındaki kuş uçuşu mesafe
+          yaklaşık <strong>{formatNumber(kmR)} km</strong>'dir. {b.name},{" "}
+          {genitive(a.name)}
+          {dir} yönündedir{isNeighbor ? " ve iki il komşudur" : ""}. Karayolu
+          mesafesi güzergâha göre genellikle {formatNumber(roadMin)}–{
+            formatNumber(roadMax)
+          } km, sürüş süresi ise yaklaşık {driveMin}–{driveMax} arasındadır.
+        </p>
+
+        <p class="mt-3 text-xs leading-relaxed text-text-muted">
+          Kuş uçuşu mesafe, il merkezlerinin resmî koordinatları arasındaki
+          büyük daire (Haversine) uzaklığıdır. Karayolu mesafesi ve süre,
+          Türkiye'deki şehirlerarası yolların tipik kıvrım oranına (×1,2–1,4)
+          dayanan tahminlerdir; güzergâh bilgisi değildir.
+        </p>
+
+        <AdSlot variant="in-article" />
+
+        <section class="mt-10" aria-labelledby="karsilastirma">
+          <h2 id="karsilastirma" class="text-2xl sm:text-[1.75rem]">
+            {a.name} ve {b.name} karşılaştırması
+          </h2>
+          <div
+            class="mt-4 overflow-x-auto rounded-xl border border-border bg-surface"
+          >
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col" class="num">
+                    <a href={provincePath(a.slug)} class="link normal-case">{a.name}</a>
+                  </th>
+                  <th scope="col" class="num">
+                    <a href={provincePath(b.slug)} class="link normal-case">{b.name}</a>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  compareRows.map((r) => (
+                    <tr>
+                      <td class="text-text-secondary">{r.label}</td>
+                      <td class="num font-medium">{r.a}</td>
+                      <td class="num font-medium">{r.b}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <TravelLinks place={b.name} province={b.name} class="mt-10" />
+
+        <div class="mt-10">
+          <FAQAccordion faqs={faqs} title="Sık sorulanlar" />
+        </div>
+
+        <section class="mt-10 grid gap-8 sm:grid-cols-2" aria-label="Diğer mesafeler">
+          {
+            [
+              { from: a, list: otherFromA },
+              { from: b, list: otherFromB },
+            ].map(({ from, list }) => (
+              <div>
+                <h2 class="font-sans text-base font-semibold">
+                  {ablative(from.name)} yakın illere mesafe
+                </h2>
+                <ul class="mt-2 text-sm">
+                  {list.map((x) => (
+                    <li class="flex justify-between gap-3 border-b border-border py-2">
+                      <a
+                        class="hover:text-brand-primary hover:underline"
+                        href={distancePath(from.slug, x.province.slug)}
+                      >
+                        {from.name} – {x.province.name}
+                      </a>
+                      <span class="tabular text-text-secondary">
+                        {formatNumber(Math.round(x.km))} km
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <a href={`/iller/${from.slug}/mesafeler/`} class="link mt-2 inline-block text-sm">
+                  {ablative(from.name)} tüm illere mesafe →
+                </a>
+              </div>
+            ))
+          }
+        </section>
+      </article>
+
+      <aside>
+        <div class="space-y-4 lg:sticky lg:top-24">
+          <div class="card p-4">
+            <LocatorMap
+              highlight={[a.slug, b.slug]}
+              line={[a.coordinates!, b.coordinates!]}
+              label={`${a.name} ve ${b.name} illerinin haritadaki konumu`}
+            />
+            <p class="mt-2 text-center text-xs text-text-muted">
+              Kesikli çizgi: il merkezleri arasındaki kuş uçuşu hat
+            </p>
+          </div>
+          <a href="/araclar/iki-sehir-arasi-mesafe/" class="card card-hover block p-4 text-sm">
+            <span class="font-semibold">Mesafe hesaplayıcı</span>
+            <span class="block text-text-secondary">
+              Yakıt maliyeti ve süreyi kendiniz hesaplayın →
+            </span>
+          </a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>

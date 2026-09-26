@@ -1,45 +1,28 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import TurkeyMap from "@/components/geography/TurkeyMap.astro";
-import Icon from "@/components/Icon.astro";
+import ProvinceMap from "@/components/geography/ProvinceMap.astro";
 
 const path = "/haritalar/";
+const maps = [
+  { title: "Türkiye il haritası", text: "81 il, plaka kodları ve bölgeler", href: "/haritalar/turkiye-haritasi/" },
+  { title: "Nüfus haritası", text: "İllerin nüfusa göre sıralaması ve haritası", href: "/istatistikler/en-kalabalik-iller/" },
+  { title: "Nüfus yoğunluğu haritası", text: "Kişi/km² değerleri ve sıralama", href: "/istatistikler/nufus-yogunluguna-gore-iller/" },
+  { title: "Plaka kodları haritası", text: "Her ilin plaka kodu harita üzerinde", href: "/plaka-kodlari/" },
+];
 ---
 
-<BaseLayout
-  title="Haritalar — Türkiye Haritaları"
-  description="Türkiye'nin bölge haritasını ve il bazlı görselleştirmeleri keşfedin."
-  path={path}
->
-  <PageContainer class="py-4">
+<BaseLayout title="Haritalar — Türkiye İl, Bölge, Nüfus ve Plaka Haritaları" description="Türkiye'nin interaktif il haritası, bölge haritası, nüfus ve nüfus yoğunluğu haritaları ile plaka kodları haritası." path={path}>
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs items={[{ label: "Haritalar", href: path }]} />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Haritalar
-    </h1>
-    <p class="prose-content mt-3 max-w-2xl">
-      Türkiye'nin coğrafi yapısını haritalar üzerinden keşfedin.
-    </p>
-
-    <div class="mt-8 max-w-2xl">
-      <a href="/haritalar/turkiye-haritasi/" class="card card-hover block p-5">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-extrabold text-text-primary">
-            Türkiye Haritası
-          </h2>
-          <Icon name="arrow-right" size={18} class="text-text-muted" />
-        </div>
-        <p class="prose-content mt-1.5 text-sm">
-          7 coğrafi bölge ve 81 ile göre interaktif harita.
-        </p>
-        <div class="mt-4">
-          <TurkeyMap compact />
-        </div>
-      </a>
+    <h1 class="mt-5 text-4xl leading-[1.1] sm:text-5xl">Haritalar</h1>
+    <div class="mt-8 grid items-start gap-10 lg:grid-cols-[1fr_1.4fr]">
+      <ul class="space-y-3">
+        {maps.map((m) => (
+          <li><a href={m.href} class="card card-hover block p-5"><span class="block font-semibold">{m.title}</span><span class="text-sm text-text-secondary">{m.text}</span></a></li>
+        ))}
+      </ul>
+      <ProvinceMap id="haritalar-map" />
     </div>
-  </PageContainer>
+  </div>
 </BaseLayout>

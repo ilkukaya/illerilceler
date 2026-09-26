@@ -30,8 +30,9 @@ const popularQueries = [
 
 <BaseLayout
   title="Arama"
-  description="illerilceler.com içinde il, ilçe, mahalle, plaka kodu, alan kodu ve posta kodu arayın."
+  description="İl, ilçe, plaka kodu, alan kodu ve posta kodu arayın."
   path={path}
+  noindex
 >
   <PageContainer class="py-4">
     <Breadcrumbs items={[{ label: "Arama", href: path }]} />
@@ -108,6 +109,7 @@ const popularQueries = [
 
 <script>
   import { searchAll, countByType } from "@/utils/search";
+  import { loadSearchIndex } from "@/utils/searchClient";
   import type { SearchIndexEntry, SearchResultType } from "@/types";
   import { accentClasses } from "@/utils/colors";
 
@@ -190,8 +192,8 @@ const popularQueries = [
     }
 
     idleEl?.classList.add("hidden");
-    const mod = await import("@/data/searchIndex");
-    const allResults = searchAll(q, mod.searchIndex, { limit: 200 });
+    const idx = await loadSearchIndex();
+    const allResults = searchAll(q, idx, { limit: 200 });
     const counts = countByType(allResults);
     const total = allResults.length;
 

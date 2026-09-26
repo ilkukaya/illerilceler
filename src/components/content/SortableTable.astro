@@ -1,0 +1,126 @@
+---
+/**
+ * Accessible data table with client-side column sorting. Server-rendered
+ * (so crawlers and no-JS users get the full table); clicking a header
+ * re-orders rows in place using each cell's data-sort value.
+ */
+interface Column {
+  key: string;
+  label: string;
+  numeric?: boolean;
+}
+
+interface Cell {
+  text: string;
+  sort?: number | string;
+  href?: string;
+}
+
+interface Props {
+  columns: Column[];
+  rows: Record<string, Cell>[];
+  caption?: string;
+  id?: string;
+  class?: string;
+  rank?: boolean;
+}
+
+const {
+  columns,
+  rows,
+  caption,
+  id = "table",
+  class: className = "",
+  rank = false,
+} = Astro.props;
+---
+
+<div
+  class={`overflow-x-auto rounded-xl border border-border bg-surface ${className}`}
+>
+  <table class="data-table sortable" id={id}>
+    {caption && <caption class="sr-only">{caption}</caption>}
+    <thead>
+      <tr>
+        {rank && <th class="num w-10">#</th>}
+        {
+          columns.map((c) => (
+            <th class:list={[c.numeric && "num"]} aria-sort="none" scope="col">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 uppercase hover:text-text-primary"
+                data-sort-key={c.key}
+                data-numeric={c.numeric ? "1" : "0"}
+              >
+                {c.label}
+                <span aria-hidden="true" class="sort-ind">↕</span>
+              </button>
+            </th>
+          ))
+        }
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((row, i) => (
+          <tr>
+            {rank && <td class="num text-text-muted row-rank">{i + 1}</td>}
+            {columns.map((c) => {
+              const cell = row[c.key];
+              return (
+                <td
+                  class:list={[c.numeric && "num"]}
+                  data-key={c.key}
+                  data-sort={String(cell?.sort ?? cell?.text ?? "")}
+                >
+                  {cell?.href ? (
+                    <a href={cell.href} class="font-medium text-text-primary hover:text-brand-primary hover:underline">
+                      {cell.text}
+                    </a>
+                  ) : (
+                    cell?.text
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLTableElement>("table.sortable").forEach((table) => {
+    const tbody = table.tBodies[0];
+    table.querySelectorAll<HTMLButtonElement>("[data-sort-key]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.sortKey!;
+        const numeric = btn.dataset.numeric === "1";
+        const th = btn.closest("th")!;
+        const asc = th.getAttribute("aria-sort") !== "ascending";
+        table.querySelectorAll("th").forEach((h) => h.setAttribute("aria-sort", "none"));
+        th.setAttribute("aria-sort", asc ? "ascending" : "descending");
+        const rows = Array.from(tbody.rows);
+        rows.sort((a, b) => {
+          const va = a.querySelector<HTMLElement>(`[data-key="${key}"]`)?.dataset.sort ?? "";
+          const vb = b.querySelector<HTMLElement>(`[data-key="${key}"]`)?.dataset.sort ?? "";
+          const cmp = numeric ? Number(va) - Number(vb) : va.localeCompare(vb, "tr");
+          return asc ? cmp : -cmp;
+        });
+        rows.forEach((r, i) => {
+          const rk = r.querySelector(".row-rank");
+          if (rk) rk.textContent = String(i + 1);
+          tbody.appendChild(r);
+        });
+      });
+    });
+  });
+</script>
+
+<style is:global>
+  th[aria-sort="ascending"] .sort-ind,
+  th[aria-sort="descending"] .sort-ind {
+    color: var(--text-primary);
+  }
+</style>

@@ -1,254 +1,162 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
 import PlateVisual from "@/components/code-pages/PlateVisual.astro";
-import CodeSummaryCard from "@/components/code-pages/CodeSummaryCard.astro";
-import LocationMapCard from "@/components/geography/LocationMapCard.astro";
+import InfoBox from "@/components/content/InfoBox.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import RelatedSearches from "@/components/content/RelatedSearches.astro";
-import SourcesCard from "@/components/content/SourcesCard.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
 import { plateCodes } from "@/data/plateCodes";
-import { getProvinceBySlug, getNeighborProvinces } from "@/data/provinces";
+import { provinces, getProvinceBySlug, getNeighborProvinces } from "@/data/provinces";
 import { getRegion } from "@/data/regions";
 import { getDistrictsForProvince } from "@/data/districts";
-import { formatNumber, formatArea, formatElevation } from "@/utils/format";
+import { formatNumber, formatArea } from "@/utils/format";
+import { genitive, copula } from "@/utils/turkish";
+import { provinceLead } from "@/utils/content";
+import { provincePath, platePath, districtPath, districtListPath } from "@/utils/links";
 import { faqPageSchema, webPageSchema } from "@/utils/seo";
-import StructuredData from "@/components/seo/StructuredData.astro";
 
 export function getStaticPaths() {
   return plateCodes.map((pc) => ({
     params: { code: pc.code },
-    props: { plateCode: pc },
+    props: { code: pc.code, provinceSlug: pc.provinceSlug },
   }));
 }
 
-const { plateCode } = Astro.props as { plateCode: (typeof plateCodes)[number] };
-const province = getProvinceBySlug(plateCode.provinceSlug)!;
+const { code, provinceSlug } = Astro.props as { code: string; provinceSlug: string };
+const province = getProvinceBySlug(provinceSlug)!;
 const region = getRegion(province.region);
-const neighborProvinces = getNeighborProvinces(province);
-const districts = getDistrictsForProvince(province.slug);
-const path = `/plaka-kodlari/${plateCode.code}/`;
-const answer = `${plateCode.code} plaka kodu ${province.name} iline aittir.`;
+const neighbors = getNeighborProvinces(province);
+const districts = [...getDistrictsForProvince(province.slug)].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
+const path = platePath(code);
+const n = Number(code);
+const prev = provinces.find((p) => Number(p.plateCode) === n - 1);
+const next = provinces.find((p) => Number(p.plateCode) === n + 1);
+const answerRest = `${province.name}, ${region?.name ?? ""}'nde yer alır; telefon alan kodu ${copula(province.areaCodes.map((c) => `0${c}`).join(" ve "))}.`;
 
 const faqs = [
-  { question: `${plateCode.code} nerenin plakası?`, answer },
-  { question: `${plateCode.code} plaka kodu hangi ile aittir?`, answer },
+  { question: `${code} nerenin plakası?`, answer: `${code} plaka kodu ${province.name} iline aittir.` },
   {
-    question: `${province.name} hangi bölgededir?`,
-    answer: `${province.name}, ${region?.name ?? ""} yer alır.`,
+    question: `${genitive(province.name)} plaka kodu kaçtır?`,
+    answer: `${genitive(province.name)} plaka kodu ${copula(code)}.`,
   },
-  ...(province.areaCodes.length > 0
+  {
+    question: `${code} plakalı araç ${province.name} dışında kullanılabilir mi?`,
+    answer: `Evet. Plaka kodu yalnızca aracın tescil edildiği ili gösterir; araç Türkiye'nin her yerinde trafiğe çıkabilir.`,
+  },
+  {
+    question: "Türkiye'de plaka kodları nasıl belirlenmiştir?",
+    answer: "İl plaka kodları, illerin adlarının alfabetik sırasına göre 1'den 67'ye kadar verilmiştir. Sonradan il olan yerler (68 Aksaray'dan 81 Düzce'ye) kuruluş sırasına göre numaralandırılmıştır.",
+  },
+  ...(neighbors.length
     ? [
         {
-          question: `${province.name}'nin alan kodu kaçtır?`,
-          answer: `${province.name} ilinin alan kodu ${province.areaCodes.map((c) => `0${c}`).join(" / ")}'dir.`,
-        },
-      ]
-    : []),
-  ...(province.districtCount
-    ? [
-        {
-          question: `${province.name} kaç ilçeden oluşur?`,
-          answer: `${province.name} ${province.districtCount} ilçeden oluşur.`,
+          question: `${genitive(province.name)} komşu illerinin plaka kodları nelerdir?`,
+          answer: `${neighbors.map((x) => `${x.name} ${x.plateCode}`).join(", ")}.`,
         },
       ]
     : []),
 ];
-
-const relatedSearches = [
-  { label: `${province.name} ili`, href: `/iller/${province.slug}/` },
-  ...province.areaCodes.map((c) => ({
-    label: `${c} nerenin alan kodu?`,
-    href: `/alan-kodlari/${c}/`,
-  })),
-  ...(districts.length > 0
-    ? [
-        {
-          label: `${province.name} ilçeleri`,
-          href: `/iller/${province.slug}/ilceler/`,
-        },
-      ]
-    : []),
-  ...neighborProvinces
-    .slice(0, 2)
-    .map((n) => ({
-      label: `${n.plateCode} nerenin plakası?`,
-      href: `/plaka-kodlari/${n.plateCode}/`,
-    })),
-  { label: "Tüm plaka kodları", href: "/plaka-kodlari/" },
-];
+const title = `${code} Nerenin Plakası? ${code} Plaka Kodu Hangi İlin — ${province.name}`;
+const description = `${code} plaka kodu ${province.name} iline aittir. ${province.name}: ${region?.name ?? ""}, alan kodu ${province.areaCodes.map((c) => `0${c}`).join(" / ")}, nüfus ${province.population ? formatNumber(province.population) : ""}, ${districts.length} ilçe.`;
 ---
 
 <BaseLayout
-  title={`${plateCode.code} Nerenin Plakası? — ${province.name}`}
-  description={`${answer} ${province.name} ili hakkında bölge, alan kodu, ilçe sayısı ve daha fazla bilgi.`}
+  title={title}
+  description={description}
   path={path}
+  image={`/og/provinces/${province.slug}.jpg`}
+  schema={[webPageSchema({ name: title, path, description }), faqPageSchema(faqs)]}
 >
-  <StructuredData
-    schema={[
-      webPageSchema({
-        name: `${plateCode.code} Nerenin Plakası?`,
-        path,
-        description: answer,
-      }),
-      faqPageSchema(faqs),
-    ]}
-  />
-
-  <PageContainer class="py-4">
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs
       items={[
-        { label: "Plaka Kodları", href: "/plaka-kodlari/" },
-        { label: plateCode.code, href: path },
+        { label: "Plaka kodları", href: "/plaka-kodlari/" },
+        { label: code, href: path },
       ]}
     />
-  </PageContainer>
-
-  <PageContainer class="pb-12">
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
-      <div class="flex flex-col gap-10">
-        <section aria-labelledby="quick-answer">
-          <h1
-            id="quick-answer"
-            class="text-3xl font-extrabold text-text-primary sm:text-4xl"
-          >
-            {plateCode.code} Nerenin Plakası?
-          </h1>
-          <div
-            class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-          >
-            <p class="text-base font-semibold text-text-primary sm:text-lg">
-              <strong>{answer}</strong>
-            </p>
-          </div>
-        </section>
-
-        <section
-          class="flex flex-col items-start gap-6 sm:flex-row sm:items-center"
-        >
-          <PlateVisual code={plateCode.code} />
-          <div>
-            <p class="text-2xl font-extrabold text-text-primary">
-              {province.name}
-            </p>
-            <p class="text-sm text-text-secondary">{region?.name}</p>
-            <a href={`/iller/${province.slug}/`} class="btn btn-primary mt-3">
-              {province.name} İl Sayfasına Git
-            </a>
-          </div>
-        </section>
-
-        {
-          province.overview && (
-            <section aria-labelledby="il-hakkinda-heading">
-              <h2
-                id="il-hakkinda-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                {province.name} Hakkında
-              </h2>
-              <p class="prose-content mt-3">{province.overview}</p>
-            </section>
-          )
-        }
-
-        {
-          districts.length > 0 && (
-            <section aria-labelledby="ilceler-heading">
-              <h2
-                id="ilceler-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                {province.name} İlçeleri
-              </h2>
-              <div class="mt-3 flex flex-wrap gap-2">
-                {districts.map((d) => (
-                  <a href={`/iller/${province.slug}/${d.slug}/`} class="pill">
-                    {d.name}
-                  </a>
-                ))}
-              </div>
-            </section>
-          )
-        }
-
-        {
-          neighborProvinces.length > 0 && (
-            <section aria-labelledby="komsu-iller-heading">
-              <h2
-                id="komsu-iller-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                Komşu İller
-              </h2>
-              <div class="mt-3 flex flex-wrap gap-2">
-                {neighborProvinces.map((n) => (
-                  <a href={`/iller/${n.slug}/`} class="pill">
-                    {n.name}{" "}
-                    <span class="ml-1 text-text-muted">({n.plateCode})</span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )
-        }
+    <div class="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-14">
+      <article class="min-w-0">
+        <p class="section-eyebrow">Plaka kodu</p>
+        <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">{code} nerenin plakası?</h1>
+        <p class="answer-box mt-6">
+          <strong>{code}</strong> plaka kodu <strong>{province.name}</strong> iline aittir.
+          {" "}{answerRest}
+        </p>
+        <div class="mt-6 flex flex-wrap items-center gap-6">
+          <PlateVisual code={code} class="w-full max-w-[340px]" />
+          <a href={provincePath(province.slug)} class="btn btn-primary">
+            {province.name} il sayfası →
+          </a>
+        </div>
 
         <AdSlot variant="in-article" />
 
-        <FAQAccordion faqs={faqs} />
-        <RelatedSearches items={relatedSearches} />
-      </div>
+        <section class="mt-10">
+          <h2 class="text-2xl sm:text-[1.75rem]">{province.name} hakkında</h2>
+          <p class="prose-content mt-3 max-w-3xl">{provinceLead(province)}</p>
+          <h3 class="mt-6 text-base">
+            {code} plakalı ilin {districts.length} ilçesi
+          </h3>
+          <ul class="mt-2 flex flex-wrap gap-2">
+            {
+              districts.map((d) => (
+                <li>
+                  <a class="pill" href={districtPath(province.slug, d.slug)}>
+                    {d.name}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          {
+            neighbors.length > 0 && (
+              <>
+                <h3 class="mt-6 text-base">Komşu illerin plaka kodları</h3>
+                <ul class="mt-2 flex flex-wrap gap-2">
+                  {neighbors.map((x) => (
+                    <li>
+                      <a class="pill" href={platePath(x.plateCode)}>
+                        <b class="tabular text-text-primary">{x.plateCode}</b> {x.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          }
+        </section>
 
-      <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
-        <CodeSummaryCard
-          ctaHref={`/iller/${province.slug}/`}
-          ctaLabel="İl Sayfasını Gör"
-          facts={[
-            { icon: "compass", label: "Bölge", value: region?.name ?? "—" },
-            {
-              icon: "phone",
-              label: "Alan Kodu",
-              value: province.areaCodes.map((c) => `0${c}`).join(" / "),
-            },
-            {
-              icon: "map",
-              label: "İlçe Sayısı",
-              value: province.districtCount
-                ? `${province.districtCount} ilçe`
-                : "—",
-            },
-            {
-              icon: "users",
-              label: "Nüfus",
-              value: province.population
-                ? formatNumber(province.population)
-                : "—",
-            },
-            {
-              icon: "ruler",
-              label: "Yüzölçümü",
-              value: formatArea(province.areaKm2),
-            },
-            {
-              icon: "mountain",
-              label: "Rakım",
-              value: formatElevation(province.elevationM),
-            },
-          ]}
-        />
-        <LocationMapCard
-          regionSlug={province.region}
-          placeName={province.name}
-          coordinates={province.coordinates}
-        />
-        <AdSlot variant="sidebar" />
-        <SourcesCard
-          sources={province.sources}
-          lastReviewed={province.lastReviewed}
-        />
+        <div class="mt-12">
+          <FAQAccordion faqs={faqs} />
+        </div>
+
+        <nav class="mt-10 flex justify-between gap-4 border-t border-border pt-6 text-sm" aria-label="Önceki ve sonraki plaka">
+          {prev ? (
+            <a href={platePath(prev.plateCode)} class="link">← {prev.plateCode} {prev.name}</a>
+          ) : <span />}
+          {next ? (
+            <a href={platePath(next.plateCode)} class="link">{next.plateCode} {next.name} →</a>
+          ) : <span />}
+        </nav>
+      </article>
+      <aside>
+        <div class="lg:sticky lg:top-24">
+          <InfoBox
+            title={province.name}
+            subtitle={`Plaka ${code} · ${region?.name ?? ""}`}
+            map={{ highlight: [province.slug], label: `${genitive(province.name)} konumu` }}
+            rows={[
+              { label: "Plaka kodu", value: code },
+              { label: "Alan kodu", value: province.areaCodes.map((c) => `0${c}`).join(" / ") },
+              { label: "Nüfus", value: province.population ? formatNumber(province.population) : "" },
+              { label: "Yüzölçümü", value: formatArea(province.areaKm2) },
+              { label: "İlçe sayısı", value: String(districts.length), href: districtListPath(province.slug) },
+            ]}
+          />
+        </div>
       </aside>
     </div>
-  </PageContainer>
+  </div>
 </BaseLayout>

@@ -1,65 +1,48 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
-import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-
-const path = "/cerez-politikasi/";
+import LegalLayout from "@/layouts/LegalLayout.astro";
 ---
 
-<BaseLayout
-  title="Çerez Politikası"
-  description="illerilceler.com çerez politikası."
-  path={path}
+<LegalLayout
+  title="Çerez politikası"
+  description="İller İlçeler çerez politikası: zorunlu, analiz ve reklam çerezleri, Google Consent Mode ve çerez tercihlerinizi nasıl değiştirebileceğiniz."
+  path="/cerez-politikasi/"
+  updated="26 Eylül 2026"
 >
-  <PageContainer class="py-4">
-    <Breadcrumbs items={[{ label: "Çerez Politikası", href: path }]} />
-  </PageContainer>
+  <p>
+    Çerezler, ziyaret ettiğiniz sitelerin tarayıcınıza kaydettiği küçük metin dosyalarıdır. Bu sitede
+    kullanılan çerez ve benzeri teknolojiler aşağıda listelenmiştir.
+  </p>
 
-  <PageContainer class="max-w-3xl pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary">Çerez Politikası</h1>
-    <p class="mt-2 text-sm text-text-muted">Son güncelleme: Ocak 2026</p>
+  <h2>Zorunlu / işlevsel</h2>
+  <ul>
+    <li><strong>illerilceler-theme</strong> (yerel depolama): Açık/koyu tema tercihiniz.</li>
+    <li><strong>ii-consent</strong> (yerel depolama): Çerez tercihiniz.</li>
+  </ul>
 
-    <div class="prose-content mt-8 flex flex-col gap-6">
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">Çerez Nedir?</h2>
-        <p class="mt-2">
-          Çerezler, ziyaret ettiğiniz web siteleri tarafından tarayıcınıza
-          kaydedilen küçük metin dosyalarıdır. Tercihlerinizi hatırlamamıza ve
-          size daha iyi bir deneyim sunmamıza yardımcı olur.
-        </p>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">
-          Kullandığımız Depolama Türleri
-        </h2>
-        <ul class="mt-2 list-disc space-y-1.5 pl-5">
-          <li>
-            <strong class="text-text-primary">Zorunlu depolama:</strong> Tema tercihiniz
-            (aydınlık/karanlık mod) gibi temel işlevler için kullanılır.
-          </li>
-          <li>
-            <strong class="text-text-primary">İşlevsel depolama:</strong> Favori sayfalarınız
-            gibi kişiselleştirme özellikleri için kullanılır.
-          </li>
-          <li>
-            <strong class="text-text-primary"
-              >Analitik ve reklam çerezleri:</strong
-            > Site performansını ölçmek ve olası reklam gösterimlerini yönetmek için
-            üçüncü taraf sağlayıcılar tarafından kullanılabilir.
-          </li>
-        </ul>
-      </section>
-      <section>
-        <h2 class="text-lg font-bold text-text-primary">
-          Çerezleri Nasıl Yönetebilirsiniz?
-        </h2>
-        <p class="mt-2">
-          Çoğu tarayıcı, çerezleri kabul etme, reddetme veya silme seçeneği
-          sunar. Tarayıcı ayarlarınızdan çerez tercihlerinizi yönetebilirsiniz;
-          ancak bazı çerezleri devre dışı bırakmanız site işlevselliğini
-          etkileyebilir.
-        </p>
-      </section>
-    </div>
-  </PageContainer>
-</BaseLayout>
+  <h2>Analiz (onayınızla)</h2>
+  <ul>
+    <li>
+      <strong>Google Analytics</strong> (_ga, _ga_*): Ziyaret sayısı ve hangi sayfaların faydalı
+      olduğunu anlamamızı sağlar. Onay vermezseniz çerez yerleştirilmez; yalnızca çerezsiz, toplu
+      ölçüm sinyalleri gönderilir.
+    </li>
+  </ul>
+
+  <h2>Reklam (onayınızla)</h2>
+  <ul>
+    <li>
+      <strong>Google AdSense</strong> (ör. __gads, __gpi, IDE): Reklam gösterimi, sıklık sınırlama ve
+      — onay vermeniz hâlinde — ilgi alanına dayalı reklamlar için kullanılır. Onay vermezseniz
+      kişiselleştirilmemiş reklamlar gösterilir.
+    </li>
+  </ul>
+
+  <h2>Tercihlerinizi değiştirme</h2>
+  <p>
+    Sayfanın alt kısmındaki <strong>"Çerez tercihleri"</strong> bağlantısıyla seçiminizi istediğiniz
+    zaman değiştirebilirsiniz. Tarayıcı ayarlarınızdan da çerezleri silebilir veya engelleyebilirsiniz.
+    Kişiselleştirilmiş Google reklamlarını
+    <a href="https://adssettings.google.com" target="_blank" rel="noopener">Reklam Ayarları</a>
+    sayfasından kapatabilirsiniz.
+  </p>
+</LegalLayout>

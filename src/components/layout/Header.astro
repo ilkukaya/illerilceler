@@ -5,43 +5,48 @@ import MobileMenu from "@/components/layout/MobileMenu.astro";
 import GlobalSearch from "@/components/search/GlobalSearch.astro";
 
 export const navItems = [
-  { label: "Ana Sayfa", href: "/" },
   { label: "İller", href: "/iller/" },
   { label: "İlçeler", href: "/ilceler/" },
-  { label: "Mahalleler", href: "/mahalleler/" },
-  { label: "Köyler", href: "/koyler/" },
-  { label: "Haritalar", href: "/haritalar/" },
+  { label: "Plaka Kodları", href: "/plaka-kodlari/" },
+  { label: "Alan Kodları", href: "/alan-kodlari/" },
+  { label: "Posta Kodları", href: "/posta-kodlari/" },
+  { label: "Harita", href: "/haritalar/turkiye-haritasi/" },
   { label: "İstatistikler", href: "/istatistikler/" },
-  { label: "Rehber", href: "/rehber/" },
+  { label: "Mesafe", href: "/mesafe/" },
+];
+
+export const secondaryNav = [
   { label: "Eğitim", href: "/egitim/" },
+  { label: "Araçlar", href: "/araclar/" },
+  { label: "Açık Veri", href: "/acik-veri/" },
+  { label: "Hakkımızda", href: "/hakkimizda/" },
 ];
 
 const currentPath = Astro.url.pathname;
 function isActive(href: string) {
-  if (href === "/") return currentPath === "/";
   return currentPath.startsWith(href);
 }
 ---
 
 <header
-  class="sticky top-0 z-40 border-b border-border bg-surface/85 backdrop-blur-md"
+  class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80"
 >
-  <div class="container-page flex h-16 items-center justify-between gap-3">
+  <div class="container-page flex h-14 items-center gap-4 lg:h-16">
     <Logo size="md" class="shrink-0" />
 
     <nav
       aria-label="Ana menü"
-      class="hidden lg:flex items-center gap-0.5 text-[13px] font-semibold"
+      class="ml-2 hidden items-center gap-0.5 text-sm font-medium xl:flex"
     >
       {
         navItems.map((item) => (
           <a
             href={item.href}
             class:list={[
-              "px-2.5 py-2 rounded-lg transition-colors whitespace-nowrap",
+              "relative whitespace-nowrap rounded-md px-2.5 py-2 transition-colors",
               isActive(item.href)
-                ? "text-brand-primary bg-brand-purple-soft"
-                : "text-text-secondary hover:text-text-primary hover:bg-surface-muted",
+                ? "text-text-primary after:absolute after:inset-x-2.5 after:-bottom-[13px] after:h-0.5 after:bg-brand-primary lg:after:-bottom-[17px]"
+                : "text-text-secondary hover:text-text-primary",
             ]}
             aria-current={isActive(item.href) ? "page" : undefined}
           >
@@ -51,87 +56,67 @@ function isActive(href: string) {
       }
     </nav>
 
-    <div class="flex items-center gap-1 shrink-0">
+    <div class="ml-auto flex items-center gap-1.5">
       <button
         type="button"
         id="search-trigger"
-        class="inline-flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
+        class="hidden h-9 w-64 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-text-muted transition-colors hover:border-border-strong md:inline-flex"
         aria-label="Sitede ara"
         aria-haspopup="dialog"
       >
-        <Icon name="search" size={19} />
+        <Icon name="search" size={16} />
+        <span>İl, ilçe veya kod ara…</span>
+        <kbd
+          class="ml-auto rounded border border-border px-1.5 text-[11px] font-medium"
+          >/</kbd
+        >
       </button>
       <button
         type="button"
-        id="favorite-toggle"
-        class="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
-        aria-label="Bu sayfayı favorilere ekle"
-        aria-pressed="false"
+        id="search-trigger-mobile"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-text-primary hover:bg-surface-muted md:hidden"
+        aria-label="Sitede ara"
+        aria-haspopup="dialog"
       >
-        <Icon name="heart" size={19} />
+        <Icon name="search" size={20} />
       </button>
       <button
         type="button"
         id="theme-toggle"
-        class="inline-flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
-        aria-label="Karanlık ve aydınlık temayı değiştir"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
+        aria-label="Koyu / açık tema"
       >
-        <Icon name="sun" size={19} class="theme-icon-light" />
-        <Icon name="moon" size={19} class="theme-icon-dark" />
+        <Icon name="moon" size={18} class="theme-icon-light" />
+        <Icon name="sun" size={18} class="theme-icon-dark" />
       </button>
-      <span
-        class="hidden sm:inline-flex items-center rounded-full border border-border px-2.5 py-1.5 text-xs font-semibold text-text-secondary"
-        aria-label="Site dili: Türkçe"
-      >
-        TR
-      </span>
       <button
         type="button"
         id="mobile-menu-trigger"
-        class="inline-flex lg:hidden h-10 w-10 items-center justify-center rounded-full text-text-secondary hover:bg-surface-muted"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-text-primary hover:bg-surface-muted xl:hidden"
         aria-label="Menüyü aç"
         aria-expanded="false"
         aria-controls="mobile-menu"
       >
-        <Icon name="menu" size={20} />
+        <Icon name="menu" size={21} />
       </button>
     </div>
   </div>
 </header>
 
-<MobileMenu navItems={navItems} />
+<MobileMenu navItems={navItems} secondary={secondaryNav} />
 <GlobalSearch />
 
 <script>
   const THEME_KEY = "illerilceler-theme";
 
-  function applyTheme(theme: string) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem(THEME_KEY, theme);
-    const toggle = document.getElementById("theme-toggle");
-    toggle?.setAttribute("aria-pressed", String(theme === "dark"));
-  }
-
   document.getElementById("theme-toggle")?.addEventListener("click", () => {
-    const current =
-      document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    applyTheme(current === "dark" ? "light" : "dark");
+    const next =
+      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {}
   });
-
-  const favBtn = document.getElementById("favorite-toggle");
-  if (favBtn) {
-    const key = `illerilceler-fav-${window.location.pathname}`;
-    const isFav = localStorage.getItem(key) === "1";
-    favBtn.setAttribute("aria-pressed", String(isFav));
-    favBtn.classList.toggle("text-brand-primary", isFav);
-    favBtn.addEventListener("click", () => {
-      const nowFav = favBtn.getAttribute("aria-pressed") !== "true";
-      favBtn.setAttribute("aria-pressed", String(nowFav));
-      favBtn.classList.toggle("text-brand-primary", nowFav);
-      if (nowFav) localStorage.setItem(key, "1");
-      else localStorage.removeItem(key);
-    });
-  }
 
   const menuTrigger = document.getElementById("mobile-menu-trigger");
   const mobileMenu = document.getElementById("mobile-menu");
@@ -141,8 +126,9 @@ function isActive(href: string) {
     document.body.classList.toggle("overflow-hidden", Boolean(isOpen));
   });
 
-  const searchTrigger = document.getElementById("search-trigger");
-  searchTrigger?.addEventListener("click", () => {
-    window.dispatchEvent(new CustomEvent("illerilceler:open-search"));
-  });
+  ["search-trigger", "search-trigger-mobile"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("illerilceler:open-search"));
+    }),
+  );
 </script>

@@ -1,273 +1,147 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import LargeCodeHero from "@/components/code-pages/LargeCodeHero.astro";
-import CodeSummaryCard from "@/components/code-pages/CodeSummaryCard.astro";
-import LocationMapCard from "@/components/geography/LocationMapCard.astro";
+import InfoBox from "@/components/content/InfoBox.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import RelatedSearches from "@/components/content/RelatedSearches.astro";
-import SourcesCard from "@/components/content/SourcesCard.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
-import Icon from "@/components/Icon.astro";
 import { areaCodes } from "@/data/areaCodes";
-import { getProvinceBySlug } from "@/data/provinces";
+import { getProvinceBySlug, getNeighborProvinces } from "@/data/provinces";
 import { getRegion } from "@/data/regions";
 import { getDistrictsForProvince } from "@/data/districts";
-import { formatNumber, formatArea, formatElevation } from "@/utils/format";
+import { districtAreaCodes } from "@/utils/content";
+import { formatNumber, formatArea } from "@/utils/format";
+import { genitive, copula } from "@/utils/turkish";
+import { provincePath, platePath, areaCodePath, districtPath } from "@/utils/links";
 import { faqPageSchema, webPageSchema } from "@/utils/seo";
-import StructuredData from "@/components/seo/StructuredData.astro";
 
 export function getStaticPaths() {
   return areaCodes.map((ac) => ({
     params: { code: ac.code },
-    props: { areaCode: ac },
+    props: { code: ac.code, provinceSlug: ac.provinceSlug, label: ac.label },
   }));
 }
 
-const { areaCode } = Astro.props as { areaCode: (typeof areaCodes)[number] };
-const province = getProvinceBySlug(areaCode.provinceSlug)!;
+const { code, provinceSlug, label } = Astro.props as {
+  code: string;
+  provinceSlug: string;
+  label?: string;
+};
+const province = getProvinceBySlug(provinceSlug)!;
 const region = getRegion(province.region);
-const districts = getDistrictsForProvince(province.slug);
-const path = `/alan-kodlari/${areaCode.code}/`;
-const locationLabel = areaCode.label ?? province.name;
-const answer = `${areaCode.code}, ${province.name} ilinin sabit telefon alan kodudur.`;
+const neighbors = getNeighborProvinces(province);
+const districts = [...getDistrictsForProvince(province.slug)]
+  .filter((d) => districtAreaCodes(d, province).includes(code))
+  .sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const path = areaCodePath(code);
+const where = label ?? province.name;
+const full = `0${code}`;
 
-const otherProvinceAreaCodes = areaCodes
-  .filter(
-    (ac) => ac.provinceSlug !== province.slug && ac.code !== areaCode.code,
-  )
-  .slice(0, 6);
+const answer =
+  province.slug === "istanbul"
+    ? `${full}, İstanbul'un ${code === "212" ? "Avrupa" : "Anadolu"} Yakası'nın sabit telefon alan kodudur. İstanbul'da iki alan kodu kullanılır: Avrupa Yakası için 0212, Anadolu Yakası için 0216.`
+    : `${full}, ${province.name} ilinin sabit telefon alan kodudur. ${genitive(province.name)} tüm ilçelerinde aynı alan kodu kullanılır.`;
 
 const faqs = [
-  { question: `${areaCode.code} nerenin alan kodu?`, answer },
-  { question: `${areaCode.code} hangi şehrin alan kodudur?`, answer },
+  { question: `${full} nerenin alan kodu?`, answer },
   {
-    question: `Türkiye içinden ${areaCode.code} nasıl aranır?`,
-    answer: `Türkiye içinden 0${areaCode.code} biçiminde, yurt dışından ise +90 ${areaCode.code} biçiminde aranır.`,
+    question: `${where} nasıl aranır?`,
+    answer: `Türkiye içinden başka bir ilden ararken ${full} ve ardından 7 haneli numara çevrilir (${full} XXX XX XX). Yurt dışından ararken +90 ${code} XXX XX XX biçimi kullanılır. Aynı il içinden yapılan aramalarda alan kodu gerekmez.`,
   },
   {
-    question: `${province.name} hangi bölgededir?`,
-    answer: `${province.name}, ${region?.name ?? ""} yer alır.`,
+    question: `${genitive(province.name)} plaka kodu kaçtır?`,
+    answer: `${genitive(province.name)} plaka kodu ${copula(province.plateCode)}.`,
+  },
+  {
+    question: `${full} cep telefonu numarası mıdır?`,
+    answer: `Hayır. ${full} sabit hat alan kodudur. Türkiye'de cep telefonu numaraları 05 ile başlar (ör. 0532, 0542, 0555) ve operatöre göre değişir, bulunulan ile göre değil.`,
   },
 ];
-
-const relatedSearches = [
-  {
-    label: `${province.plateCode} nerenin plakası?`,
-    href: `/plaka-kodlari/${province.plateCode}/`,
-  },
-  { label: `${province.name} ili`, href: `/iller/${province.slug}/` },
-  ...(districts.length > 0
-    ? [
-        {
-          label: `${province.name} ilçeleri`,
-          href: `/iller/${province.slug}/ilceler/`,
-        },
-      ]
-    : []),
-  ...otherProvinceAreaCodes
-    .slice(0, 3)
-    .map((ac) => ({
-      label: `${ac.code} nerenin alan kodu?`,
-      href: `/alan-kodlari/${ac.code}/`,
-    })),
-  { label: "Tüm alan kodları", href: "/alan-kodlari/" },
-];
+const title = `${full} Nerenin Alan Kodu? ${code} Hangi İlin Telefon Kodu — ${where}`;
+const description = `${full} ${where} sabit telefon alan kodudur. Nasıl aranır, hangi ilçelerde kullanılır; ${province.name} plaka kodu ${province.plateCode}, nüfus ${province.population ? formatNumber(province.population) : ""}.`;
 ---
 
 <BaseLayout
-  title={`${areaCode.code} Nerenin Alan Kodu? — ${province.name}`}
-  description={`${answer} Türkiye içinden ve yurt dışından nasıl aranır, ${province.name} hakkında bilgiler.`}
+  title={title}
+  description={description}
   path={path}
+  image={`/og/provinces/${province.slug}.jpg`}
+  schema={[webPageSchema({ name: title, path, description }), faqPageSchema(faqs)]}
 >
-  <StructuredData
-    schema={[
-      webPageSchema({
-        name: `${areaCode.code} Nerenin Alan Kodu?`,
-        path,
-        description: answer,
-      }),
-      faqPageSchema(faqs),
-    ]}
-  />
-
-  <PageContainer class="py-4">
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs
       items={[
-        { label: "Alan Kodları", href: "/alan-kodlari/" },
-        { label: areaCode.code, href: path },
+        { label: "Alan kodları", href: "/alan-kodlari/" },
+        { label: full, href: path },
       ]}
     />
-  </PageContainer>
+    <div class="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-14">
+      <article class="min-w-0">
+        <p class="section-eyebrow">Telefon alan kodu</p>
+        <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">{full} nerenin alan kodu?</h1>
+        <p class="answer-box mt-6">{answer}</p>
 
-  <PageContainer class="pb-12">
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
-      <div class="flex flex-col gap-10">
-        <section aria-labelledby="quick-answer">
-          <h1
-            id="quick-answer"
-            class="text-3xl font-extrabold text-text-primary sm:text-4xl"
-          >
-            {areaCode.code} Nerenin Alan Kodu?
-          </h1>
-          <div
-            class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4 sm:p-5"
-          >
-            <p class="text-base font-semibold text-text-primary sm:text-lg">
-              <strong>{answer}</strong>
-            </p>
-          </div>
-        </section>
-
-        <section
-          class="flex flex-col items-start gap-6 sm:flex-row sm:items-center"
-        >
-          <LargeCodeHero
-            code={areaCode.code}
-            label={locationLabel}
-            prefix="Alan Kodu"
-          />
-          <div>
-            <p class="text-2xl font-extrabold text-text-primary">
-              {province.name}
-            </p>
-            <p class="text-sm text-text-secondary">{region?.name}</p>
-            <a href={`/iller/${province.slug}/`} class="btn btn-primary mt-3">
-              {province.name} İl Sayfasına Git
-            </a>
-          </div>
-        </section>
-
-        <section
-          class="card flex flex-col gap-3 p-5"
-          aria-labelledby="nasil-aranir-heading"
-        >
-          <h2
-            id="nasil-aranir-heading"
-            class="flex items-center gap-2 text-lg font-extrabold text-text-primary"
-          >
-            <Icon name="phone-call" size={18} class="text-brand-primary" />
-            Nasıl Aranır?
-          </h2>
-          <p class="prose-content">
-            Türkiye içinden <strong class="text-text-primary"
-              >0{areaCode.code}</strong
-            > biçiminde, yurt dışından ise{" "}
-            <strong class="text-text-primary">+90 {areaCode.code}</strong> biçiminde
-            aranır. Sabit hat numarası aramadan önce alan kodunun başına 0 eklemeyi
-            unutmayın.
-          </p>
-        </section>
-
-        {
-          province.overview && (
-            <section aria-labelledby="il-hakkinda-heading">
-              <h2
-                id="il-hakkinda-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                {province.name} Hakkında
-              </h2>
-              <p class="prose-content mt-3">{province.overview}</p>
-            </section>
-          )
-        }
-
-        {
-          districts.length > 0 && (
-            <section aria-labelledby="ilceler-heading">
-              <h2
-                id="ilceler-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                {province.name} İlçeleri
-              </h2>
-              <div class="mt-3 flex flex-wrap gap-2">
-                {districts.map((d) => (
-                  <a href={`/iller/${province.slug}/${d.slug}/`} class="pill">
-                    {d.name}
-                  </a>
-                ))}
-              </div>
-            </section>
-          )
-        }
-
-        {
-          otherProvinceAreaCodes.length > 0 && (
-            <section aria-labelledby="benzer-kodlar-heading">
-              <h2
-                id="benzer-kodlar-heading"
-                class="text-xl font-extrabold text-text-primary"
-              >
-                Diğer Alan Kodları
-              </h2>
-              <div class="mt-3 flex flex-wrap gap-2">
-                {otherProvinceAreaCodes.map((ac) => {
-                  const p = getProvinceBySlug(ac.provinceSlug);
-                  return (
-                    <a href={`/alan-kodlari/${ac.code}/`} class="pill">
-                      {ac.code}{" "}
-                      <span class="ml-1 text-text-muted">({p?.name})</span>
-                    </a>
-                  );
-                })}
-              </div>
-            </section>
-          )
-        }
+        <div class="mt-6 inline-flex items-baseline gap-3 rounded-xl border border-border bg-surface px-5 py-4">
+          <span class="text-sm text-text-secondary">Arama biçimi</span>
+          <span class="tabular font-serif text-2xl font-semibold">({full}) XXX XX XX</span>
+        </div>
 
         <AdSlot variant="in-article" />
 
-        <FAQAccordion faqs={faqs} />
-        <RelatedSearches items={relatedSearches} />
-      </div>
+        <section class="mt-10">
+          <h2 class="text-2xl sm:text-[1.75rem]">
+            {full} alan kodunu kullanan ilçeler ({districts.length})
+          </h2>
+          <ul class="mt-4 flex flex-wrap gap-2">
+            {
+              districts.map((d) => (
+                <li>
+                  <a class="pill" href={districtPath(province.slug, d.slug)}>
+                    {d.name}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          {
+            neighbors.length > 0 && (
+              <>
+                <h3 class="mt-6 text-base">Komşu illerin alan kodları</h3>
+                <ul class="mt-2 flex flex-wrap gap-2">
+                  {neighbors.flatMap((x) =>
+                    x.areaCodes.map((c) => (
+                      <li>
+                        <a class="pill" href={areaCodePath(c)}>
+                          <b class="tabular text-text-primary">0{c}</b> {x.name}
+                        </a>
+                      </li>
+                    )),
+                  )}
+                </ul>
+              </>
+            )
+          }
+        </section>
 
-      <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
-        <CodeSummaryCard
-          ctaHref={`/iller/${province.slug}/`}
-          ctaLabel="İl Sayfasını Gör"
-          facts={[
-            { icon: "compass", label: "Bölge", value: region?.name ?? "—" },
-            { icon: "car", label: "Plaka Kodu", value: province.plateCode },
-            {
-              icon: "map",
-              label: "İlçe Sayısı",
-              value: province.districtCount
-                ? `${province.districtCount} ilçe`
-                : "—",
-            },
-            {
-              icon: "users",
-              label: "Nüfus",
-              value: province.population
-                ? formatNumber(province.population)
-                : "—",
-            },
-            {
-              icon: "ruler",
-              label: "Yüzölçümü",
-              value: formatArea(province.areaKm2),
-            },
-            {
-              icon: "mountain",
-              label: "Rakım",
-              value: formatElevation(province.elevationM),
-            },
-          ]}
-        />
-        <LocationMapCard
-          regionSlug={province.region}
-          placeName={province.name}
-          coordinates={province.coordinates}
-        />
-        <AdSlot variant="sidebar" />
-        <SourcesCard
-          sources={province.sources}
-          lastReviewed={province.lastReviewed}
-        />
+        <div class="mt-12"><FAQAccordion faqs={faqs} /></div>
+      </article>
+      <aside>
+        <div class="lg:sticky lg:top-24">
+          <InfoBox
+            title={province.name}
+            subtitle={region?.name}
+            map={{ highlight: [province.slug], label: `${genitive(province.name)} konumu` }}
+            rows={[
+              { label: "Alan kodu", value: province.areaCodes.map((c) => `0${c}`).join(" / ") },
+              { label: "Plaka kodu", value: province.plateCode, href: platePath(province.plateCode) },
+              { label: "Nüfus", value: province.population ? formatNumber(province.population) : "" },
+              { label: "Yüzölçümü", value: formatArea(province.areaKm2) },
+            ]}
+          />
+          <a href={provincePath(province.slug)} class="btn btn-secondary mt-4 w-full">
+            {province.name} il sayfası
+          </a>
+        </div>
       </aside>
     </div>
-  </PageContainer>
+  </div>
 </BaseLayout>

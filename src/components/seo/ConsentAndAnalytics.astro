@@ -1,0 +1,140 @@
+---
+/**
+ * Google Consent Mode v2 + GA4 + AdSense loader + KVKK/GDPR cookie banner.
+ * Everything is inert until the IDs in src/config/monetization.ts are set.
+ *
+ * - Consent defaults to "denied" for ads & analytics storage; GA/AdSense still
+ *   load (cookieless / non-personalised) and upgrade when the visitor accepts.
+ * - Third-party scripts load after the window `load` event, so they never
+ *   compete with the page's own content for LCP.
+ */
+import { monetization, adsEnabled, needsConsent } from "@/config/monetization";
+
+const { gaId, adsenseClient } = monetization;
+const anyTracking = Boolean(gaId) || adsEnabled;
+---
+
+{
+  anyTracking && (
+    <script
+      is:inline
+      define:vars={{ gaId, adsenseClient, adsEnabled }}
+    >
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      window.gtag = gtag;
+      var stored = null;
+      try {
+        stored = localStorage.getItem("ii-consent");
+      } catch (e) {}
+      var granted = stored === "granted" ? "granted" : "denied";
+      gtag("consent", "default", {
+        ad_storage: granted,
+        ad_user_data: granted,
+        ad_personalization: granted,
+        analytics_storage: granted,
+        functionality_storage: "granted",
+        security_storage: "granted",
+        wait_for_update: 500,
+      });
+      gtag("set", "ads_data_redaction", granted !== "granted");
+      gtag("js", new Date());
+      if (gaId) gtag("config", gaId, { anonymize_ip: true });
+
+      function loadScript(src, attrs) {
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = src;
+        if (attrs) for (var k in attrs) s.setAttribute(k, attrs[k]);
+        document.head.appendChild(s);
+        return s;
+      }
+      window.addEventListener("load", function () {
+        if (gaId) loadScript("https://www.googletagmanager.com/gtag/js?id=" + gaId);
+        if (adsEnabled) {
+          var ads = loadScript(
+            "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + adsenseClient,
+            { crossorigin: "anonymous" },
+          );
+          ads.onload = function () {
+            document.querySelectorAll("ins.adsbygoogle:not([data-adsbygoogle-status])").forEach(function (el) {
+              // Skip units hidden at this breakpoint (e.g. desktop-only sidebar on phones).
+              if (!el.offsetWidth) return;
+              try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+              } catch (e) {}
+            });
+          };
+        }
+      });
+    </script>
+  )
+}
+
+{
+  needsConsent && (
+    <div
+      id="consent-banner"
+      class="fixed inset-x-0 bottom-0 z-[70] hidden border-t border-border bg-surface p-4 shadow-popover sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-w-md sm:rounded-xl sm:border"
+      role="dialog"
+      aria-live="polite"
+      aria-label="Çerez tercihleri"
+    >
+      <p class="text-sm leading-relaxed text-text-secondary">
+        Sitemizi geliştirmek ve ücretsiz tutmak için analiz ve reklam
+        çerezleri kullanıyoruz. Kabul etmezseniz yalnızca zorunlu çerezler
+        kullanılır ve reklamlar kişiselleştirilmez.{" "}
+        <a href="/cerez-politikasi/" class="link">Ayrıntılar</a>
+      </p>
+      <div class="mt-3 flex gap-2">
+        <button type="button" class="btn btn-primary flex-1 !min-h-10" data-consent="granted">
+          Kabul et
+        </button>
+        <button type="button" class="btn btn-secondary flex-1 !min-h-10" data-consent="denied">
+          Yalnızca zorunlu
+        </button>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  const banner = document.getElementById("consent-banner");
+  const KEY = "ii-consent";
+
+  function stored(): string | null {
+    try {
+      return localStorage.getItem(KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  function apply(value: "granted" | "denied") {
+    try {
+      localStorage.setItem(KEY, value);
+    } catch {}
+    const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+    w.gtag?.("consent", "update", {
+      ad_storage: value,
+      ad_user_data: value,
+      ad_personalization: value,
+      analytics_storage: value,
+    });
+    banner?.classList.add("hidden");
+  }
+
+  if (banner) {
+    if (!stored()) banner.classList.remove("hidden");
+    banner.querySelectorAll<HTMLButtonElement>("[data-consent]").forEach((b) =>
+      b.addEventListener("click", () => apply(b.dataset.consent as "granted" | "denied")),
+    );
+  }
+
+  document.getElementById("cookie-settings-open")?.addEventListener("click", () => {
+    if (banner) banner.classList.remove("hidden");
+    else alert("Bu sitede şu an analiz veya reklam çerezi kullanılmıyor.");
+  });
+</script>

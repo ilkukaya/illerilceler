@@ -1,123 +1,65 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import Icon from "@/components/Icon.astro";
+import ProvinceMap from "@/components/geography/ProvinceMap.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
 import { provinces } from "@/data/provinces";
 import { getRegion } from "@/data/regions";
+import { platePath } from "@/utils/links";
+import { itemListSchema, webPageSchema, faqPageSchema } from "@/utils/seo";
 
-const sorted = [...provinces].sort((a, b) =>
-  a.plateCode.localeCompare(b.plateCode),
-);
 const path = "/plaka-kodlari/";
+const byCode = [...provinces].sort((a, b) => Number(a.plateCode) - Number(b.plateCode));
+const faqs = [
+  { question: "Türkiye'de kaç plaka kodu var?", answer: "Türkiye'de her ile bir tane olmak üzere 01'den 81'e kadar 81 il plaka kodu vardır." },
+  { question: "Plaka kodları nasıl sıralanır?", answer: "01–67 arası kodlar, 1960'lardaki 67 ilin alfabetik sırasına göre verilmiştir (ör. 01 Adana, 06 Ankara, 34 İstanbul). 68 Aksaray'dan 81 Düzce'ye kadar olan kodlar sonradan kurulan illere kuruluş sırasıyla verilmiştir." },
+  { question: "En son plaka kodu hangi ile aittir?", answer: "81 plaka kodu, 1999'da il olan Düzce'ye aittir." },
+  { question: "Mersin'in plaka kodu neden 33?", answer: "Mersin, plaka kodlarının dağıtıldığı dönemde İçel adıyla anıldığı için alfabetik sırada 33. sıraya yerleşmiştir." },
+];
+const title = "Plaka Kodları: 01'den 81'e Tüm İllerin Plaka Kodu Listesi";
+const description = "Türkiye il plaka kodları tam listesi: 01 Adana'dan 81 Düzce'ye 81 ilin plaka kodu, haritası ve bölgesi. Plaka kodu hangi ile ait, hemen öğrenin.";
 ---
 
 <BaseLayout
-  title="Plaka Kodları — Türkiye'nin 81 İlinin Plaka Kodu Listesi"
-  description="Türkiye'deki 81 ilin plaka kodlarını görüntüleyin. Plaka kodu girerek hangi ile ait olduğunu hemen öğrenin."
+  title={title}
+  description={description}
   path={path}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    itemListSchema(byCode.map((p) => ({ name: `${p.plateCode} ${p.name}`, href: platePath(p.plateCode) }))),
+    faqPageSchema(faqs),
+  ]}
 >
-  <PageContainer class="py-4">
-    <Breadcrumbs items={[{ label: "Plaka Kodları", href: path }]} />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Plaka Kodları
-    </h1>
-    <p class="prose-content mt-3 max-w-2xl">
-      Türkiye'de her il, araç plakalarında kullanılan iki haneli bir plaka
-      koduna sahiptir. Aşağıdan bir kod girerek veya listeden seçerek ilgili ile
-      ulaşabilirsiniz.
-    </p>
-
-    <form id="plate-lookup-form" class="mt-6 flex max-w-md items-center gap-2">
-      <label for="plate-lookup-input" class="sr-only">Plaka kodu ara</label>
-      <div class="relative flex-1">
-        <Icon
-          name="car"
-          size={18}
-          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
-        />
-        <input
-          id="plate-lookup-input"
-          type="text"
-          inputmode="numeric"
-          maxlength="2"
-          placeholder="Örn: 47"
-          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
-        />
-      </div>
-      <button type="submit" class="btn btn-primary h-12">Sorgula</button>
-    </form>
-    <p
-      id="plate-lookup-error"
-      class="mt-2 hidden text-sm font-medium text-brand-red"
-    >
-      Geçerli bir plaka kodu girin (01-81).
-    </p>
-
-    <div
-      class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
-      id="plate-grid"
-    >
-      {
-        sorted.map((p) => {
-          const region = getRegion(p.region);
-          return (
-            <a
-              href={`/plaka-kodlari/${p.plateCode}/`}
-              class="plate-grid-item card card-hover flex flex-col items-center gap-1.5 p-4 text-center"
-              data-text={`${p.plateCode} ${p.name}`}
-            >
-              <span class="text-2xl font-extrabold text-brand-primary">
-                {p.plateCode}
-              </span>
-              <span class="text-sm font-semibold text-text-primary">
-                {p.name}
-              </span>
-              <span class="text-xs text-text-muted">
-                {region?.name.replace(" Bölgesi", "")}
-              </span>
-            </a>
-          );
-        })
-      }
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs items={[{ label: "Plaka kodları", href: path }]} />
+    <div class="mt-5 grid items-start gap-10 lg:grid-cols-2">
+      <header>
+        <h1 class="text-4xl leading-[1.1] sm:text-5xl">İl plaka kodları</h1>
+        <p class="answer-box mt-6">
+          Türkiye'de 01 (Adana) ile 81 (Düzce) arasında 81 il plaka kodu vardır. Kodlar 67 ile kadar
+          alfabetik, sonrasında illerin kuruluş sırasına göre verilmiştir. Bir koda dokunarak ilin
+          bilgilerine ulaşabilirsiniz.
+        </p>
+      </header>
+      <ProvinceMap labels controls={false} id="plaka-map" />
     </div>
-  </PageContainer>
+
+    <ol class="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      {byCode.map((p) => (
+        <li class="bg-surface">
+          <a href={platePath(p.plateCode)} class="flex items-center gap-3 px-3 py-3 hover:bg-surface-muted">
+            <span class="tabular w-9 font-serif text-2xl font-semibold text-brand-primary">{p.plateCode}</span>
+            <span class="min-w-0">
+              <span class="block truncate font-medium">{p.name}</span>
+              <span class="block truncate text-xs text-text-muted">{getRegion(p.region)?.name.replace(" Bölgesi", "")}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+
+    <AdSlot variant="leaderboard" />
+    <div class="mt-12 max-w-3xl"><FAQAccordion faqs={faqs} /></div>
+  </div>
 </BaseLayout>
-
-<script>
-  import { attachListFilter } from "@/utils/listFilter";
-
-  const form = document.getElementById(
-    "plate-lookup-form",
-  ) as HTMLFormElement | null;
-  const input = document.getElementById(
-    "plate-lookup-input",
-  ) as HTMLInputElement | null;
-  const errorEl = document.getElementById("plate-lookup-error");
-  const items = Array.from(
-    document.querySelectorAll<HTMLElement>(".plate-grid-item"),
-  );
-  const validCodes = new Set(
-    items
-      .map(
-        (el) => el.getAttribute("href")?.match(/\/plaka-kodlari\/(\d+)\//)?.[1],
-      )
-      .filter(Boolean),
-  );
-
-  attachListFilter(input, items, (el) => el.dataset.text ?? "");
-
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const raw = (input?.value ?? "").trim().replace(/^0+/, "").padStart(2, "0");
-    if (validCodes.has(raw)) {
-      errorEl?.classList.add("hidden");
-      window.location.href = `/plaka-kodlari/${raw}/`;
-    } else {
-      errorEl?.classList.remove("hidden");
-    }
-  });
-</script>

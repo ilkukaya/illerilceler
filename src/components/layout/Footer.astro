@@ -1,146 +1,126 @@
 ---
 import Logo from "@/components/brand/Logo.astro";
-import Icon from "@/components/Icon.astro";
 import { siteConfig } from "@/config/site";
+import { provinces } from "@/data/provinces";
 
 const columns = [
   {
-    title: "İller & İlçeler",
+    title: "Rehber",
     links: [
-      { label: "Tüm İller", href: "/iller/" },
-      { label: "İstanbul", href: "/iller/istanbul/" },
-      { label: "Ankara", href: "/iller/ankara/" },
-      { label: "İzmir", href: "/iller/izmir/" },
-      { label: "İstanbul İlçeleri", href: "/iller/istanbul/ilceler/" },
-      { label: "Tüm İlçeler", href: "/ilceler/" },
+      { label: "81 il listesi", href: "/iller/" },
+      { label: "973 ilçe listesi", href: "/ilceler/" },
+      { label: "Türkiye haritası", href: "/haritalar/turkiye-haritasi/" },
+      { label: "İller arası mesafe", href: "/mesafe/" },
+      { label: "İstatistikler", href: "/istatistikler/" },
     ],
   },
   {
     title: "Kodlar",
     links: [
-      { label: "Plaka Kodları", href: "/plaka-kodlari/" },
-      { label: "Alan Kodları", href: "/alan-kodlari/" },
-      { label: "Posta Kodları", href: "/posta-kodlari/" },
-      { label: "47 Nerenin Plakası?", href: "/plaka-kodlari/47/" },
-      { label: "312 Nerenin Kodu?", href: "/alan-kodlari/312/" },
+      { label: "Plaka kodları", href: "/plaka-kodlari/" },
+      { label: "Telefon alan kodları", href: "/alan-kodlari/" },
+      { label: "Posta kodları", href: "/posta-kodlari/" },
+      { label: "Açık veri (JSON/CSV)", href: "/acik-veri/" },
     ],
   },
   {
-    title: "Haritalar & Veri",
+    title: "Öğren",
     links: [
-      { label: "Türkiye Haritası", href: "/haritalar/turkiye-haritasi/" },
-      { label: "İstatistikler", href: "/istatistikler/" },
-      {
-        label: "En Kalabalık İller",
-        href: "/istatistikler/en-kalabalik-iller/",
-      },
-      { label: "Mahalleler", href: "/mahalleler/" },
-      { label: "Köyler", href: "/koyler/" },
-    ],
-  },
-  {
-    title: "Eğitim & Araçlar",
-    links: [
-      { label: "Eğitim Köşesi", href: "/egitim/" },
-      { label: "Quiz", href: "/egitim/quiz/" },
-      { label: "81 İl ve Plakaları", href: "/egitim/81-il-ve-plakalari/" },
-      {
-        label: "Şehirler Arası Mesafe",
-        href: "/araclar/iki-sehir-arasi-mesafe/",
-      },
+      { label: "Eğitim köşesi", href: "/egitim/" },
+      { label: "81 il ve plakaları", href: "/egitim/81-il-ve-plakalari/" },
+      { label: "Coğrafya testi", href: "/egitim/quiz/" },
+      { label: "Araçlar", href: "/araclar/" },
     ],
   },
   {
     title: "Kurumsal",
     links: [
-      { label: "Rehber", href: "/rehber/" },
-      { label: "Kaynaklar", href: "/rehber/#kaynaklar" },
-      { label: "Görsel Kaynakları", href: "/gorsel-kaynaklari/" },
-      { label: "Gizlilik Politikası", href: "/gizlilik/" },
-      { label: "Çerez Politikası", href: "/cerez-politikasi/" },
-      { label: "Kullanım Koşulları", href: "/kullanim-kosullari/" },
+      { label: "Hakkımızda", href: "/hakkimizda/" },
+      { label: "Veri kaynakları ve yöntem", href: "/rehber/" },
       { label: "İletişim", href: "/iletisim/" },
+      { label: "Gizlilik", href: "/gizlilik/" },
+      { label: "Çerez politikası", href: "/cerez-politikasi/" },
+      { label: "Kullanım koşulları", href: "/kullanim-kosullari/" },
     ],
   },
 ];
 
-const socialLinks = [
-  { label: "Instagram", icon: "instagram", href: siteConfig.social.instagram },
-  { label: "Facebook", icon: "facebook", href: siteConfig.social.facebook },
-  { label: "Twitter / X", icon: "twitter", href: siteConfig.social.twitter },
-  { label: "YouTube", icon: "youtube", href: siteConfig.social.youtube },
-];
-
+const alphabetical = [...provinces].sort((a, b) =>
+  a.name.localeCompare(b.name, "tr"),
+);
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-border bg-surface">
-  <div class="container-page py-12">
-    <div
-      class="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-6"
-    >
-      <div class="col-span-2 sm:col-span-3 lg:col-span-1">
-        <Logo size="sm" />
-        <p class="mt-4 max-w-xs text-sm leading-relaxed text-text-secondary">
-          Türkiye'nin illeri, ilçeleri, mahalleleri, plaka ve alan kodları
-          hakkında güvenilir, güncel ve anlaşılır bilgi kaynağı.
+<footer class="mt-16 border-t border-border bg-surface">
+  <div class="container-page py-10 lg:py-12">
+    <div class="grid gap-10 lg:grid-cols-[1.2fr_2fr]">
+      <div>
+        <Logo size="md" />
+        <p class="mt-3 max-w-sm text-sm leading-relaxed text-text-secondary">
+          Türkiye'nin 81 ili ve 973 ilçesi için TÜİK ve resmî kurum
+          verilerine dayanan, bağımsız bilgi rehberi.
         </p>
-        <div class="mt-5 flex items-center gap-2">
-          {
-            socialLinks.map((s) => (
-              <a
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:border-brand-primary hover:text-brand-primary"
-              >
-                <Icon name={s.icon} size={16} />
-              </a>
-            ))
-          }
-        </div>
+        <button
+          type="button"
+          id="cookie-settings-open"
+          class="mt-4 text-sm text-text-secondary underline underline-offset-4 hover:text-text-primary"
+        >
+          Çerez tercihleri
+        </button>
       </div>
-
-      {
-        columns.map((col) => (
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-wide text-text-muted">
-              {col.title}
-            </h3>
-            <ul class="mt-4 flex flex-col gap-2.5">
-              {col.links.map((link) => (
-                <li>
-                  <a
-                    href={link.href}
-                    class="text-sm text-text-secondary transition-colors hover:text-brand-primary"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      }
+      <div class="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        {
+          columns.map((col) => (
+            <div>
+              <h2 class="font-sans text-sm font-semibold text-text-primary">
+                {col.title}
+              </h2>
+              <ul class="mt-3 space-y-2">
+                {col.links.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class="text-sm text-text-secondary hover:text-text-primary"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
     </div>
 
-    <div
-      class="mt-10 rounded-2xl border border-border bg-surface-muted px-5 py-4"
-    >
-      <p
-        class="flex items-start gap-2.5 text-xs leading-relaxed text-text-secondary"
+    <div class="mt-10 border-t border-border pt-8">
+      <h2 class="font-sans text-sm font-semibold text-text-primary">
+        81 il — plaka kodlarıyla
+      </h2>
+      <ul
+        class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
       >
-        <Icon name="info" size={15} class="mt-0.5 shrink-0 text-text-muted" />
-        {siteConfig.disclaimer}
-      </p>
+        {
+          alphabetical.map((p) => (
+            <li>
+              <a
+                href={`/iller/${p.slug}/`}
+                class="text-text-secondary hover:text-text-primary"
+              >
+                <span class="tabular mr-1 text-text-muted">{p.plateCode}</span>
+                {p.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
     </div>
 
     <div
-      class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-text-muted sm:flex-row"
+      class="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-xs leading-relaxed text-text-muted sm:flex-row sm:justify-between"
     >
-      <p>© {year} illerilceler.com — Tüm hakları saklıdır.</p>
-      <p>Türkiye Bilgi Merkezi</p>
+      <p>© {year} {siteConfig.name}. {siteConfig.disclaimer}</p>
+      <p class="shrink-0">Nüfus: TÜİK ADNKS 2025 · Yüzölçümü: HGM</p>
     </div>
   </div>
 </footer>

@@ -1,487 +1,402 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import SectionHeader from "@/components/layout/SectionHeader.astro";
 import TableOfContents from "@/components/content/TableOfContents.astro";
-import InfoTable from "@/components/content/InfoTable.astro";
-import QuickFacts from "@/components/content/QuickFacts.astro";
-import LocationMapCard from "@/components/geography/LocationMapCard.astro";
 import FAQAccordion from "@/components/content/FAQAccordion.astro";
-import RelatedSearches from "@/components/content/RelatedSearches.astro";
 import SourcesCard from "@/components/content/SourcesCard.astro";
-import QuickToolCard from "@/components/cards/QuickToolCard.astro";
+import InfoBox from "@/components/content/InfoBox.astro";
+import TravelLinks from "@/components/content/TravelLinks.astro";
 import LocationHero from "@/components/geography/LocationHero.astro";
 import AdSlot from "@/components/content/AdSlot.astro";
-import Icon from "@/components/Icon.astro";
 import { getProvinceBySlug } from "@/data/provinces";
 import {
-  districtNamesByProvince,
+  districts as allDistricts,
   getDistrictsForProvince,
   getNeighborDistricts,
 } from "@/data/districts";
-import { getPostalCodesForDistrict } from "@/data/postalCodes";
+import { neighborhoods } from "@/data/neighborhoods";
 import { getDistrictImage } from "@/generated/locationImageManifest";
 import { formatNumber, formatArea, formatElevation } from "@/utils/format";
-import { districtFaqs } from "@/utils/content";
-import { webPageSchema, faqPageSchema } from "@/utils/seo";
-import StructuredData from "@/components/seo/StructuredData.astro";
+import {
+  districtFaqs,
+  districtLead,
+  districtParagraphs,
+  districtAreaCodes,
+} from "@/utils/content";
+import { districtRanks, density, POPULATION_YEAR } from "@/utils/rankings";
+import { genitive } from "@/utils/turkish";
+import {
+  districtPath,
+  districtListPath,
+  provincePath,
+  platePath,
+  areaCodePath,
+} from "@/utils/links";
+import {
+  administrativeAreaSchema,
+  faqPageSchema,
+  webPageSchema,
+  absoluteUrl,
+} from "@/utils/seo";
 
 export function getStaticPaths() {
-  const paths: {
-    params: { province: string; district: string };
-    props: { provinceSlug: string; districtSlug: string };
-  }[] = [];
-  for (const provinceSlug of Object.keys(districtNamesByProvince)) {
-    for (const d of getDistrictsForProvince(provinceSlug)) {
-      paths.push({
-        params: { province: provinceSlug, district: d.slug },
-        props: { provinceSlug, districtSlug: d.slug },
-      });
-    }
-  }
-  return paths;
+  return allDistricts.map((d) => ({
+    params: { province: d.provinceSlug, district: d.slug },
+    props: { districtId: d.id },
+  }));
 }
 
-const { provinceSlug, districtSlug } = Astro.props as {
-  provinceSlug: string;
-  districtSlug: string;
-};
-const province = getProvinceBySlug(provinceSlug)!;
-const district = getDistrictsForProvince(provinceSlug).find(
-  (d) => d.slug === districtSlug,
-)!;
+const { districtId } = Astro.props as { districtId: string };
+const district = allDistricts.find((d) => d.id === districtId)!;
+const province = getProvinceBySlug(district.provinceSlug)!;
+const siblings = getDistrictsForProvince(province.slug);
 const neighborDistricts = getNeighborDistricts(district);
-const postalCodes = getPostalCodesForDistrict(provinceSlug, districtSlug);
+const postalByName = new Map(
+  neighborhoods
+    .filter((n) => n.provinceSlug === province.slug && n.districtSlug === district.slug)
+    .map((n) => [n.name, n.postalCode]),
+);
 const faqs = districtFaqs(district, province.name);
-const path = `/iller/${provinceSlug}/${districtSlug}/`;
+const lead = districtLead(district, province);
+const paragraphs = districtParagraphs(district, province);
+const ranks = districtRanks(district);
+const path = districtPath(province.slug, district.slug);
 const image = getDistrictImage(district.id)!;
+const hasPhoto =
+  image.type === "real-photo" || image.type === "ai-photorealistic";
+const dens = density(district.population, district.areaKm2);
+const areaCodes = districtAreaCodes(district, province);
+const areaCodeText = areaCodes.map((c) => `0${c}`).join(" / ");
+const modified = district.lastReviewed;
 
-const summaryStats = [
-  { label: "İl", value: province.name },
-  { label: "Plaka", value: province.plateCode },
-  {
-    label: "Alan Kodu",
-    value: province.areaCodes.map((c) => `0${c}`).join(" / "),
-  },
-  {
-    label: "Nüfus",
-    value: district.population ? formatNumber(district.population) : "—",
-  },
-  {
-    label: "Mahalle",
-    value: district.neighborhoodCount
-      ? String(district.neighborhoodCount)
-      : "—",
-  },
-  { label: "Yüzölçümü", value: formatArea(district.areaKm2) },
-  { label: "Rakım", value: formatElevation(district.elevationM) },
-].filter((s) => s.value && s.value !== "—");
+const byPop = [...siblings].sort(
+  (a, b) => (b.population ?? 0) - (a.population ?? 0),
+);
+const idx = byPop.findIndex((d) => d.id === district.id);
+const nearbyInRanking = byPop
+  .slice(Math.max(0, idx - 3), idx + 4)
+  .filter((d) => d.id !== district.id);
 
-const tocCandidates = [
-  { id: "genel-bakis", label: "Genel Bakış", show: true },
-  {
-    id: "mahalleler",
-    label: "Mahalleler",
-    show: Boolean(district.neighborhoods?.length),
-  },
-  { id: "posta-kodlari", label: "Posta Kodları", show: postalCodes.length > 0 },
-  {
-    id: "yasam",
-    label: "Yaşam",
-    show: Boolean(
-      district.transportation ||
-      district.education ||
-      district.health ||
-      district.socialLife,
-    ),
-  },
-  {
-    id: "yerler",
-    label: "Popüler Yerler",
-    show: Boolean(
-      district.popularPlaces?.length || district.historicalPlaces?.length,
-    ),
-  },
-  { id: "sss", label: "SSS", show: faqs.length > 0 },
-];
-const toc = tocCandidates.filter((t) => t.show);
+const editorialSections = [
+  { id: "ulasim", title: "Ulaşım", body: district.transportation },
+  { id: "egitim", title: "Eğitim", body: district.education },
+  { id: "saglik", title: "Sağlık", body: district.health },
+  { id: "sosyal-yasam", title: "Sosyal yaşam", body: district.socialLife },
+].filter((s) => s.body);
 
-const relatedSearches = [
-  { label: `${district.name} hangi ile bağlı?`, href: path },
-  {
-    label: `${province.name} ilçeleri`,
-    href: `/iller/${provinceSlug}/ilceler/`,
-  },
-  ...postalCodes
-    .slice(0, 2)
-    .map((p) => ({
-      label: `${p.code} posta kodu`,
-      href: `/posta-kodlari/${p.code}/`,
-    })),
-  { label: `${province.name} ili`, href: `/iller/${provinceSlug}/` },
-  {
-    label: `${province.plateCode} nerenin plakası?`,
-    href: `/plaka-kodlari/${province.plateCode}/`,
-  },
+const places = [
+  ...(district.historicalPlaces ?? []),
+  ...(district.popularPlaces ?? []),
+].filter((p) => !/\d\+/.test(p.meta ?? ""));
+
+const toc = [
+  { id: "genel-bakis", label: "Genel bakış" },
+  ...(district.neighborhoods?.length
+    ? [{ id: "mahalleler", label: "Mahalleler" }]
+    : []),
+  ...editorialSections.map((s) => ({ id: s.id, label: s.title })),
+  { id: "il-icindeki-yeri", label: `${province.name} içindeki yeri` },
+  { id: "sss", label: "Sık sorulanlar" },
 ];
 
-const breadcrumbItems = [
-  { label: "İller", href: "/iller/" },
-  { label: province.name, href: `/iller/${provinceSlug}/` },
-  { label: district.name, href: path },
-];
+const title = `${district.name} (${province.name}) Nüfusu, Mahalleleri ve Bilgileri — ${POPULATION_YEAR}`;
+const description = `${district.name}, ${province.name}: nüfus ${district.population ? formatNumber(district.population) : "—"} (TÜİK ${POPULATION_YEAR}), yüzölçümü ${formatArea(district.areaKm2)}, ${district.neighborhoodCount ?? "—"} mahalle. Plaka ${province.plateCode}, alan kodu ${areaCodeText}.`;
 ---
 
 <BaseLayout
-  title={`${district.name} — ${province.name} İlçesi Hakkında Bilgiler`}
-  description={district.summary ??
-    `${district.name}, ${province.name} iline bağlı bir ilçedir. Nüfus, mahalle, posta kodu ve daha fazla bilgi.`}
+  title={title}
+  description={description}
   path={path}
   image={image.openGraph}
+  type="article"
+  modified={modified}
+  schema={[
+    administrativeAreaSchema({
+      name: `${district.name}, ${province.name}`,
+      path,
+      description: lead,
+      containedIn: province.name,
+      containedInPath: provincePath(province.slug),
+      population: district.population,
+      populationYear: district.populationYear,
+      areaKm2: district.areaKm2,
+      plateCode: province.plateCode,
+      areaCodes,
+      image: image.openGraph,
+    }),
+    webPageSchema({
+      name: title,
+      path,
+      description,
+      modified,
+      aboutId: `${absoluteUrl(path)}#place`,
+    }),
+    faqPageSchema(faqs),
+  ]}
 >
-  <StructuredData
-    schema={[
-      webPageSchema({
-        name: `${district.name} İlçesi`,
-        path,
-        description:
-          district.summary ?? `${district.name} ilçesi hakkında bilgiler`,
-      }),
-      ...(faqs.length > 0 ? [faqPageSchema(faqs)] : []),
-    ]}
-  />
-  <PageContainer class="py-4">
-    <Breadcrumbs items={breadcrumbItems.slice(0)} />
-  </PageContainer>
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs
+      items={[
+        { label: "İller", href: "/iller/" },
+        { label: province.name, href: provincePath(province.slug) },
+        { label: "İlçeler", href: districtListPath(province.slug) },
+        { label: district.name, href: path },
+      ]}
+    />
 
-  <PageContainer>
-    <div class="relative overflow-hidden rounded-3xl">
-      <LocationHero
-        image={image}
-        priority={true}
-        class="absolute inset-0 h-full w-full"
-      />
-      <div
-        class="relative flex min-h-56 flex-col justify-end bg-gradient-to-t from-black/70 via-black/15 to-transparent p-6 sm:min-h-56 sm:p-8 lg:min-h-64"
-      >
-        <a
-          href={`/iller/${provinceSlug}/`}
-          class="inline-flex w-fit items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-white/25"
-        >
-          <Icon name="map-pin" size={12} />
-          {province.name}
-        </a>
-        <h1 class="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
-          {district.name}
-        </h1>
+    <header class="mt-5 max-w-3xl">
+      <p class="section-eyebrow">
+        <a href={provincePath(province.slug)} class="hover:text-text-primary"
+          >{province.name}</a
+        > ilçesi
+      </p>
+      <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">{district.name}</h1>
+      <ul class="mt-4 flex flex-wrap gap-2 text-sm">
         {
-          district.summary && (
-            <p class="mt-1.5 max-w-2xl text-sm text-white/90 sm:text-base">
-              {district.summary}
-            </p>
+          district.population && (
+            <li class="pill">
+              Nüfus{" "}
+              <b class="text-text-primary">
+                {formatNumber(district.population)}
+              </b>
+            </li>
           )
         }
-      </div>
-    </div>
+        {
+          district.neighborhoodCount && (
+            <li class="pill">
+              <b class="text-text-primary">{district.neighborhoodCount}</b>{" "}
+              mahalle
+            </li>
+          )
+        }
+        <li>
+          <a class="pill" href={platePath(province.plateCode)}
+            >Plaka <b class="text-text-primary">{province.plateCode}</b></a
+          >
+        </li>
+        {
+          areaCodes.map((c) => (
+            <li>
+              <a class="pill" href={areaCodePath(c)}>
+                Alan kodu <b class="text-text-primary">0{c}</b>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </header>
 
-    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-      {
-        summaryStats.map((s) => (
-          <div class="card p-3 text-center">
-            <p class="break-words text-lg font-extrabold text-text-primary">
-              {s.value}
-            </p>
-            <p class="text-xs text-text-secondary">{s.label}</p>
+    <div
+      class="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-14"
+    >
+      <article class="min-w-0">
+        {
+          hasPhoto && (
+            <div class="relative mb-8 aspect-[16/7] overflow-hidden rounded-xl">
+              <LocationHero
+                image={image}
+                priority={true}
+                class="absolute inset-0 h-full w-full"
+              />
+            </div>
+          )
+        }
+
+        <p class="answer-box">{lead}</p>
+
+        <section id="genel-bakis" class="mt-10 scroll-mt-24">
+          <h2 class="text-2xl sm:text-[1.75rem]">Genel bakış</h2>
+          <div class="prose-content mt-4 max-w-3xl">
+            {district.overview && <p>{district.overview}</p>}
+            {paragraphs.map((p) => <p>{p}</p>)}
           </div>
-        ))
-      }
-    </div>
-  </PageContainer>
-
-  <PageContainer class="mt-6">
-    <TableOfContents items={toc} />
-  </PageContainer>
-
-  <PageContainer class="grid grid-cols-1 gap-8 py-8 lg:grid-cols-[1fr_320px]">
-    <div class="flex flex-col gap-12">
-      <section
-        id="genel-bakis"
-        aria-labelledby="genel-bakis-heading"
-        class="scroll-mt-32"
-      >
-        <h2
-          id="genel-bakis-heading"
-          class="text-2xl font-extrabold text-text-primary"
-        >
-          Genel Bakış
-        </h2>
-        {
-          district.summary && (
-            <div class="mt-4 rounded-2xl border border-brand-primary/20 bg-brand-purple-soft p-4">
-              <p class="text-sm font-semibold text-text-primary">
-                <strong>{district.summary}</strong>
-              </p>
-            </div>
-          )
-        }
-        {
-          district.overview && (
-            <p class="prose-content mt-4">{district.overview}</p>
-          )
-        }
-        {
-          !district.overview && !district.summary && (
-            <p class="prose-content mt-4">
-              {district.name}, {province.name} iline bağlı bir ilçedir.
-              Nüfus, yüzölçümü ve mahalle sayısı gibi temel bilgilere
-              yukarıdaki kartlardan ulaşabilirsiniz.
-            </p>
-          )
-        }
-
-        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <InfoTable
-            title="Genel Bilgiler"
-            rows={[
-              { label: "Bağlı Olduğu İl", value: province.name },
-              {
-                label: "Komşu İlçeler",
-                value: neighborDistricts.map((d) => d.name).join(", "),
-              },
-              {
-                label: "Kıyısı Olan Denizler",
-                value: district.coastline?.join(", ") ?? "",
-              },
-              { label: "İklim", value: district.climate?.join(", ") ?? "" },
-              {
-                label: "Merkeze Uzaklık",
-                value: district.distanceToCenterKm
-                  ? `${district.distanceToCenterKm} km`
-                  : "",
-              },
-            ]}
-          />
-          <QuickFacts
-            title="Hızlı Bilgiler"
-            facts={[
-              { icon: "car", label: "Plaka Kodu", value: province.plateCode },
-              {
-                icon: "phone",
-                label: "Alan Kodu",
-                value: province.areaCodes.map((c) => `0${c}`).join(" / "),
-              },
-              {
-                icon: "mail",
-                label: "Posta Kodu",
-                value: postalCodes[0]?.code ?? "",
-              },
-              {
-                icon: "users",
-                label: "Mahalle Sayısı",
-                value: district.neighborhoodCount
-                  ? `${district.neighborhoodCount} mahalle`
-                  : "",
-              },
-            ]}
-          />
-        </div>
-
-        {
-          neighborDistricts.length > 0 && (
-            <div class="mt-5">
-              <h3 class="text-sm font-bold text-text-primary">Komşu İlçeler</h3>
-              <div class="mt-2.5 flex flex-wrap gap-2">
-                {neighborDistricts.map((d) => (
-                  <a href={`/iller/${provinceSlug}/${d.slug}/`} class="pill">
-                    {d.name}
-                  </a>
-                ))}
+          {
+            places.length > 0 && (
+              <div class="mt-5">
+                <p class="section-eyebrow">Öne çıkan yerler</p>
+                <ul class="mt-2 flex flex-wrap gap-2">
+                  {places.map((p) => (
+                    <li class="chip">{p.label}</li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )
+          }
+        </section>
+
+        <AdSlot variant="in-article" />
+
+        {
+          district.neighborhoods && district.neighborhoods.length > 0 && (
+            <section id="mahalleler" class="mt-10 scroll-mt-24">
+              <h2 class="text-2xl sm:text-[1.75rem]">
+                {district.name} mahalleleri
+              </h2>
+              <ul class="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-[15px] sm:grid-cols-3">
+                {[...district.neighborhoods]
+                  .sort((a, b) => a.localeCompare(b, "tr"))
+                  .map((n) => {
+                    const pc = postalByName.get(n);
+                    return (
+                      <li class="flex justify-between gap-2 border-b border-border py-1.5">
+                        <span>{n}</span>
+                        {pc && (
+                          <a
+                            href={`/posta-kodlari/${pc}/`}
+                            class="tabular text-sm text-text-muted hover:text-text-primary"
+                          >
+                            {pc}
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+              </ul>
+            </section>
           )
         }
 
-        <div class="mt-5">
-          <LocationMapCard
-            regionSlug={province.region}
-            placeName={`${district.name}, ${province.name}`}
-            title="Türkiye'deki Konumu"
+        {
+          editorialSections.map((s) => (
+            <section id={s.id} class="mt-12 scroll-mt-24">
+              <h2 class="text-2xl sm:text-[1.75rem]">{s.title}</h2>
+              <div class="prose-content mt-4 max-w-3xl">
+                <p>{s.body}</p>
+              </div>
+            </section>
+          ))
+        }
+
+        <TravelLinks
+          place={district.name}
+          province={province.name}
+          class="mt-12"
+        />
+
+        <section id="il-icindeki-yeri" class="mt-12 scroll-mt-24">
+          <h2 class="text-2xl sm:text-[1.75rem]">
+            {genitive(province.name)} ilçeleri arasında {district.name}
+          </h2>
+          <p class="mt-2 text-sm text-text-secondary">
+            Nüfusa göre sıralamada {district.name} ve çevresindeki ilçeler.
+          </p>
+          <div
+            class="mt-4 overflow-x-auto rounded-xl border border-border bg-surface"
+          >
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="num w-10">#</th>
+                  <th scope="col">İlçe</th>
+                  <th scope="col" class="num">Nüfus</th>
+                  <th scope="col" class="num">km²</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  [...nearbyInRanking, district]
+                    .sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
+                    .map((d) => (
+                      <tr class:list={[d.id === district.id && "font-semibold"]}>
+                        <td class="num text-text-muted">
+                          {byPop.findIndex((x) => x.id === d.id) + 1}
+                        </td>
+                        <td>
+                          {d.id === district.id ? (
+                            d.name
+                          ) : (
+                            <a
+                              href={districtPath(province.slug, d.slug)}
+                              class="hover:text-brand-primary hover:underline"
+                            >
+                              {d.name}
+                            </a>
+                          )}
+                        </td>
+                        <td class="num">
+                          {d.population ? formatNumber(d.population) : "—"}
+                        </td>
+                        <td class="num">
+                          {d.areaKm2 ? formatNumber(d.areaKm2) : "—"}
+                        </td>
+                      </tr>
+                    ))
+                }
+              </tbody>
+            </table>
+          </div>
+          <a
+            href={districtListPath(province.slug)}
+            class="link mt-3 inline-block text-sm"
+            >{genitive(province.name)} tüm {siblings.length} ilçesi →</a
+          >
+          {
+            neighborDistricts.length > 0 && (
+              <>
+                <h3 class="mt-6 text-base">Komşu ilçeler</h3>
+                <ul class="mt-2 flex flex-wrap gap-2">
+                  {neighborDistricts.map((n) => (
+                    <li>
+                      <a class="pill" href={districtPath(province.slug, n.slug)}>
+                        {n.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          }
+        </section>
+
+        <AdSlot variant="in-article" />
+
+        <div class="mt-12">
+          <FAQAccordion
+            faqs={faqs}
+            title={`${district.name} hakkında sık sorulanlar`}
           />
         </div>
-      </section>
 
-      {
-        district.neighborhoods && district.neighborhoods.length > 0 && (
-          <section
-            id="mahalleler"
-            aria-labelledby="mahalleler-heading"
-            class="scroll-mt-32"
-          >
-            <SectionHeader
-              as="h2"
-              id="mahalleler-heading"
-              title={`${district.name} Mahalleleri`}
-              description={`${district.name} ilçesi ${district.neighborhoods.length} mahalleden oluşur.`}
-            />
-            <div class="mt-4 flex flex-wrap gap-2">
-              {district.neighborhoods.map((n) => (
-                <span class="pill cursor-default hover:border-border hover:text-text-secondary hover:bg-surface">
-                  {n}
-                </span>
-              ))}
-            </div>
-          </section>
-        )
-      }
+        <div class="mt-10">
+          <SourcesCard
+            sources={district.sources ?? [
+              { name: "TÜİK ADNKS", url: "https://data.tuik.gov.tr" },
+              { name: "Harita Genel Müdürlüğü", url: "https://www.harita.gov.tr" },
+            ]}
+            lastReviewed={district.lastReviewed}
+          />
+        </div>
+      </article>
 
-      {
-        postalCodes.length > 0 && (
-          <section
-            id="posta-kodlari"
-            aria-labelledby="posta-kodlari-heading"
-            class="scroll-mt-32"
-          >
-            <h2
-              id="posta-kodlari-heading"
-              class="text-2xl font-extrabold text-text-primary"
-            >
-              Posta Kodları
-            </h2>
-            <p class="prose-content mt-3">
-              {district.name} ilçesindeki bazı mahallelerin posta kodları:
-            </p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              {postalCodes.map((p) => (
-                <a href={`/posta-kodlari/${p.code}/`} class="pill font-mono">
-                  {p.code}
-                </a>
-              ))}
-            </div>
-          </section>
-        )
-      }
-
-      {
-        (district.transportation ||
-          district.education ||
-          district.health ||
-          district.socialLife) && (
-          <section
-            id="yasam"
-            aria-labelledby="yasam-heading"
-            class="scroll-mt-32 flex flex-col gap-6"
-          >
-            <h2
-              id="yasam-heading"
-              class="text-2xl font-extrabold text-text-primary"
-            >
-              Yaşam
-            </h2>
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {district.transportation && (
-                <div class="card p-4">
-                  <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
-                    <Icon name="bus" size={16} class="text-brand-primary" />{" "}
-                    Ulaşım
-                  </h3>
-                  <p class="prose-content mt-2 text-sm">
-                    {district.transportation}
-                  </p>
-                </div>
-              )}
-              {district.education && (
-                <div class="card p-4">
-                  <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
-                    <Icon
-                      name="graduation-cap"
-                      size={16}
-                      class="text-brand-primary"
-                    />{" "}
-                    Eğitim
-                  </h3>
-                  <p class="prose-content mt-2 text-sm">{district.education}</p>
-                </div>
-              )}
-              {district.health && (
-                <div class="card p-4">
-                  <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
-                    <Icon
-                      name="heart-pulse"
-                      size={16}
-                      class="text-brand-primary"
-                    />{" "}
-                    Sağlık
-                  </h3>
-                  <p class="prose-content mt-2 text-sm">{district.health}</p>
-                </div>
-              )}
-              {district.socialLife && (
-                <div class="card p-4">
-                  <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
-                    <Icon name="users" size={16} class="text-brand-primary" />{" "}
-                    Sosyal Yaşam
-                  </h3>
-                  <p class="prose-content mt-2 text-sm">
-                    {district.socialLife}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )
-      }
-
-      {
-        (district.popularPlaces?.length ||
-          district.historicalPlaces?.length) && (
-          <section
-            id="yerler"
-            aria-labelledby="yerler-heading"
-            class="scroll-mt-32"
-          >
-            <h2
-              id="yerler-heading"
-              class="text-2xl font-extrabold text-text-primary"
-            >
-              Popüler Yerler
-            </h2>
-            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {[
-                ...(district.historicalPlaces ?? []),
-                ...(district.popularPlaces ?? []),
-              ].map((p, i) => (
-                <QuickToolCard
-                  icon={p.icon ?? "map-pin"}
-                  label={p.label}
-                  meta={p.meta}
-                  color={
-                    ["blue", "green", "purple", "orange", "pink", "cyan"][
-                      i % 6
-                    ] as never
-                  }
-                />
-              ))}
-            </div>
-          </section>
-        )
-      }
-
-      <AdSlot variant="in-article" />
-
-      <div id="sss" class="scroll-mt-32">
-        <FAQAccordion faqs={faqs} />
-      </div>
-
-      <RelatedSearches items={relatedSearches} />
+      <aside class="lg:block">
+        <div class="space-y-6 lg:sticky lg:top-24">
+          <InfoBox
+            title={district.name}
+            subtitle={`${province.name} ilçesi`}
+            map={{
+              highlight: [province.slug],
+              label: `${genitive(district.name)} bağlı olduğu ${province.name} ilinin konumu`,
+            }}
+            rows={[
+              { label: "İl", value: province.name, href: provincePath(province.slug) },
+              { label: `Nüfus (${district.populationYear ?? POPULATION_YEAR})`, value: district.population ? formatNumber(district.population) : "" },
+              { label: "Yüzölçümü", value: formatArea(district.areaKm2) },
+              { label: "Yoğunluk", value: dens ? `${formatNumber(Math.round(dens))} kişi/km²` : "" },
+              { label: "Mahalle sayısı", value: district.neighborhoodCount ? String(district.neighborhoodCount) : "" },
+              { label: "İl içi nüfus sırası", value: ranks.provincePopulation ? `${ranks.provincePopulation} / ${ranks.siblings}` : "" },
+              { label: "Türkiye sırası", value: ranks.nationalPopulation ? `${ranks.nationalPopulation} / ${ranks.total}` : "" },
+              { label: "Plaka kodu", value: province.plateCode, href: platePath(province.plateCode) },
+              { label: "Alan kodu", value: areaCodeText },
+              { label: "Rakım", value: district.elevationM !== undefined ? formatElevation(district.elevationM) : "" },
+            ]}
+          />
+          <div class="hidden lg:block">
+            <TableOfContents items={toc} />
+          </div>
+          <AdSlot variant="sidebar" class="!my-0 hidden lg:block" />
+        </div>
+      </aside>
     </div>
-
-    <aside class="flex flex-col gap-5 lg:sticky lg:top-32 lg:self-start">
-      <AdSlot variant="sidebar" />
-      <SourcesCard
-        sources={district.sources}
-        lastReviewed={district.lastReviewed}
-      />
-    </aside>
-  </PageContainer>
+  </div>
 </BaseLayout>

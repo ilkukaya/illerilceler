@@ -1,0 +1,106 @@
+---
+/**
+ * Small "where is it?" map: all of Türkiye in the land colour, the given
+ * province(s) highlighted, optional neighbours tinted and an optional dot.
+ * Outlines come from the cached sprite at /harita/turkiye.svg, so each page
+ * only ships a handful of <use> elements.
+ */
+import { MAP_VIEWBOX, project } from "@/data/turkeyMap";
+
+interface Props {
+  highlight: string[];
+  secondary?: string[];
+  dot?: { lat: number; lng: number };
+  /** Draws a straight segment between two points (distance pages). */
+  line?: [{ lat: number; lng: number }, { lat: number; lng: number }];
+  label: string;
+  class?: string;
+}
+
+const {
+  highlight,
+  secondary = [],
+  dot,
+  line,
+  label,
+  class: className = "",
+} = Astro.props;
+const sprite = "/harita/turkiye.svg";
+const point = dot ? project(dot.lat, dot.lng) : undefined;
+const seg = line ? line.map((c) => project(c.lat, c.lng)) : undefined;
+---
+
+<svg
+  viewBox={MAP_VIEWBOX}
+  role="img"
+  aria-label={label}
+  class={`block h-auto w-full ${className}`}
+  preserveAspectRatio="xMidYMid meet"
+>
+  <use
+    href={`${sprite}#turkiye`}
+    fill="var(--map-land)"
+    stroke="var(--map-stroke)"
+    stroke-width="1"
+    stroke-linejoin="round"></use>
+  {
+    secondary.map((slug) => (
+      <use
+        href={`${sprite}#p-${slug}`}
+        fill="color-mix(in srgb, var(--brand-primary) 22%, var(--map-land))"
+        stroke="var(--map-stroke)"
+        stroke-width="1"
+      />
+    ))
+  }
+  {
+    highlight.map((slug) => (
+      <use
+        href={`${sprite}#p-${slug}`}
+        fill="var(--brand-primary)"
+        stroke="var(--map-stroke)"
+        stroke-width="1.2"
+      />
+    ))
+  }
+  {
+    seg && (
+      <g>
+        <line
+          x1={seg[0][0]}
+          y1={seg[0][1]}
+          x2={seg[1][0]}
+          y2={seg[1][1]}
+          stroke="var(--brand-ink)"
+          stroke-width="2.5"
+          stroke-dasharray="7 5"
+          stroke-linecap="round"
+        />
+        {seg.map(([x, y]) => (
+          <circle cx={x} cy={y} r="5.5" fill="var(--surface)" stroke="var(--brand-ink)" stroke-width="2.5" />
+        ))}
+      </g>
+    )
+  }
+  {
+    point && (
+      <g>
+        <circle
+          cx={point[0]}
+          cy={point[1]}
+          r="9"
+          fill="var(--brand-ink)"
+          opacity="0.15"
+        />
+        <circle
+          cx={point[0]}
+          cy={point[1]}
+          r="4.5"
+          fill="var(--surface)"
+          stroke="var(--brand-ink)"
+          stroke-width="2"
+        />
+      </g>
+    )
+  }
+</svg>

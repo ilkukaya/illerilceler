@@ -1,0 +1,26 @@
+---
+import ProvinceRanking from "@/components/content/ProvinceRanking.astro";
+import { formatNumber } from "@/utils/format";
+import { provincesByDensity as r, density, NATIONAL_DENSITY, POPULATION_YEAR } from "@/utils/rankings";
+import { copula } from "@/utils/turkish";
+
+const d = (i: number) => formatNumber(Math.round(density(r[i].population, r[i].areaKm2)!));
+const last = r.length - 1;
+const intro = `Türkiye'nin ortalama nüfus yoğunluğu kilometrekare başına yaklaşık ${formatNumber(Math.round(NATIONAL_DENSITY))} kişidir. En yoğun il ${d(0)} kişi/km² ile ${copula(r[0].name)}; onu ${r[1].name} (${d(1)}) ve ${r[2].name} (${d(2)}) izler. En seyrek nüfuslu il ise ${d(last)} kişi/km² ile ${copula(r[last].name)}.`;
+const faqs = [
+  { question: "Nüfus yoğunluğu en yüksek il hangisidir?", answer: `${d(0)} kişi/km² ile ${copula(r[0].name)}.` },
+  { question: "Nüfus yoğunluğu en düşük il hangisidir?", answer: `${d(last)} kişi/km² ile ${copula(r[last].name)}.` },
+  { question: "Türkiye'nin nüfus yoğunluğu kaçtır?", answer: `TÜİK ${POPULATION_YEAR} nüfusu ve toplam yüzölçümüne göre yaklaşık ${formatNumber(Math.round(NATIONAL_DENSITY))} kişi/km²'dir.` },
+  { question: "Nüfus yoğunluğu nasıl hesaplanır?", answer: "Nüfus yoğunluğu, bir yerin nüfusunun yüzölçümüne (km²) bölünmesiyle bulunur. Bu sayfada göller dahil toplam il yüzölçümü kullanılmıştır." },
+];
+---
+
+<ProvinceRanking
+  metric="density"
+  path="/istatistikler/nufus-yogunluguna-gore-iller/"
+  title={`Nüfus Yoğunluğuna Göre İller ${POPULATION_YEAR} — Kişi/Km² Sıralaması`}
+  h1="Nüfus yoğunluğuna göre iller"
+  description={`81 ilin nüfus yoğunluğu (kişi/km²) sıralaması. En yoğun il ${r[0].name}, en seyrek il ${r[last].name}. Harita ve tam tablo.`}
+  intro={intro}
+  faqs={faqs}
+/>

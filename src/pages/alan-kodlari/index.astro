@@ -1,122 +1,66 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import Icon from "@/components/Icon.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
 import { areaCodes } from "@/data/areaCodes";
 import { getProvinceBySlug } from "@/data/provinces";
-import { getRegion } from "@/data/regions";
+import { areaCodePath } from "@/utils/links";
+import { itemListSchema, webPageSchema, faqPageSchema } from "@/utils/seo";
 
-const sorted = [...areaCodes].sort((a, b) => a.code.localeCompare(b.code));
 const path = "/alan-kodlari/";
+const sorted = [...areaCodes].sort((a, b) => Number(a.code) - Number(b.code));
+const groups = [2, 3, 4].map((first) => ({
+  first,
+  items: sorted.filter((a) => a.code.startsWith(String(first))),
+}));
+const faqs = [
+  { question: "Türkiye'de kaç telefon alan kodu var?", answer: `Türkiye'de ${areaCodes.length} sabit hat alan kodu vardır. İstanbul'da iki kod (0212 Avrupa, 0216 Anadolu) kullanılır, diğer illerin her birinin bir kodu vardır.` },
+  { question: "Alan kodları neye göre belirlenmiştir?", answer: "Alan kodları coğrafi olarak gruplanmıştır: 02xx kodları çoğunlukla Marmara, Ege ve batı illerine; 03xx kodları İç Anadolu, doğu Akdeniz ile batı ve orta Karadeniz illerine; 04xx kodları Doğu ve Güneydoğu Anadolu ile doğu Karadeniz illerine aittir." },
+  { question: "Yurt dışından Türkiye'de sabit hat nasıl aranır?", answer: "+90, ardından başında 0 olmadan alan kodu ve 7 haneli numara çevrilir. Örnek: +90 312 XXX XX XX." },
+];
+const title = "Telefon Alan Kodları: Türkiye İl Alan Kodları Listesi (0212–0488)";
+const description = `Türkiye'deki ${areaCodes.length} sabit telefon alan kodunun hangi ile ait olduğu: 0212 İstanbul Avrupa, 0216 İstanbul Anadolu, 0312 Ankara, 0232 İzmir ve tüm iller.`;
 ---
 
 <BaseLayout
-  title="Alan Kodları — Türkiye İl Telefon Alan Kodları Listesi"
-  description="Türkiye'deki illerin sabit telefon alan kodlarını görüntüleyin. Alan kodu girerek hangi ile ait olduğunu hemen öğrenin."
+  title={title}
+  description={description}
   path={path}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    itemListSchema(sorted.map((a) => ({ name: `0${a.code} ${getProvinceBySlug(a.provinceSlug)?.name}`, href: areaCodePath(a.code) }))),
+    faqPageSchema(faqs),
+  ]}
 >
-  <PageContainer class="py-4">
-    <Breadcrumbs items={[{ label: "Alan Kodları", href: path }]} />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      Alan Kodları
-    </h1>
-    <p class="prose-content mt-3 max-w-2xl">
-      Türkiye'de sabit hatlar il bazında 3 haneli alan kodları kullanır.
-      Aşağıdan bir kod girerek veya listeden seçerek ilgili ile ulaşabilirsiniz.
-    </p>
-
-    <form id="area-lookup-form" class="mt-6 flex max-w-md items-center gap-2">
-      <label for="area-lookup-input" class="sr-only">Alan kodu ara</label>
-      <div class="relative flex-1">
-        <Icon
-          name="phone"
-          size={18}
-          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
-        />
-        <input
-          id="area-lookup-input"
-          type="text"
-          inputmode="numeric"
-          maxlength="3"
-          placeholder="Örn: 312"
-          class="h-12 w-full rounded-2xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
-        />
-      </div>
-      <button type="submit" class="btn btn-primary h-12">Sorgula</button>
-    </form>
-    <p
-      id="area-lookup-error"
-      class="mt-2 hidden text-sm font-medium text-brand-red"
-    >
-      Geçerli bir alan kodu girin.
-    </p>
-
-    <div
-      class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
-      id="area-grid"
-    >
-      {
-        sorted.map((ac) => {
-          const province = getProvinceBySlug(ac.provinceSlug);
-          const region = province ? getRegion(province.region) : undefined;
-          return (
-            <a
-              href={`/alan-kodlari/${ac.code}/`}
-              class="area-grid-item card card-hover flex flex-col items-center gap-1.5 p-4 text-center"
-              data-text={`${ac.code} ${province?.name}`}
-            >
-              <span class="text-2xl font-extrabold text-brand-primary">
-                {ac.code}
-              </span>
-              <span class="text-sm font-semibold text-text-primary">
-                {province?.name}
-              </span>
-              <span class="text-xs text-text-muted">
-                {region?.name.replace(" Bölgesi", "")}
-              </span>
-            </a>
-          );
-        })
-      }
+  <div class="container-page pt-4 sm:pt-6">
+    <Breadcrumbs items={[{ label: "Alan kodları", href: path }]} />
+    <header class="mt-5 max-w-3xl">
+      <h1 class="text-4xl leading-[1.1] sm:text-5xl">Telefon alan kodları</h1>
+      <p class="answer-box mt-6">
+        Türkiye'de {areaCodes.length} sabit hat alan kodu vardır. Kodlar 02, 03 ve 04 ile başlayan üç
+        grupta toplanır. Bir koda dokunarak hangi ile ait olduğunu, nasıl arandığını ve kullanıldığı
+        ilçeleri görebilirsiniz.
+      </p>
+    </header>
+    <div class="mt-10 grid gap-8 lg:grid-cols-3">
+      {groups.map((g) => (
+        <section>
+          <h2 class="font-sans text-base font-semibold">0{g.first}xx kodları</h2>
+          <ul class="mt-2 divide-y divide-border rounded-xl border border-border bg-surface">
+            {g.items.map((a) => (
+              <li>
+                <a href={areaCodePath(a.code)} class="flex items-baseline justify-between gap-3 px-4 py-2.5 hover:bg-surface-muted">
+                  <span class="tabular font-semibold">0{a.code}</span>
+                  <span class="text-right text-text-secondary">{a.label ?? getProvinceBySlug(a.provinceSlug)?.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
-  </PageContainer>
+    <AdSlot variant="leaderboard" />
+    <div class="mt-12 max-w-3xl"><FAQAccordion faqs={faqs} /></div>
+  </div>
 </BaseLayout>
-
-<script>
-  import { attachListFilter } from "@/utils/listFilter";
-
-  const form = document.getElementById(
-    "area-lookup-form",
-  ) as HTMLFormElement | null;
-  const input = document.getElementById(
-    "area-lookup-input",
-  ) as HTMLInputElement | null;
-  const errorEl = document.getElementById("area-lookup-error");
-  const items = Array.from(
-    document.querySelectorAll<HTMLElement>(".area-grid-item"),
-  );
-  const validCodes = new Set(
-    items
-      .map(
-        (el) => el.getAttribute("href")?.match(/\/alan-kodlari\/(\d+)\//)?.[1],
-      )
-      .filter(Boolean),
-  );
-
-  attachListFilter(input, items, (el) => el.dataset.text ?? "");
-
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const raw = (input?.value ?? "").trim().replace(/^0+/, "");
-    if (validCodes.has(raw)) {
-      errorEl?.classList.add("hidden");
-      window.location.href = `/alan-kodlari/${raw}/`;
-    } else {
-      errorEl?.classList.remove("hidden");
-    }
-  });
-</script>

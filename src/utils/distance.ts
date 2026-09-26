@@ -48,3 +48,18 @@ export function estimateFuelLiters(roadKm: number): number {
 export function estimateFuelCostTRY(liters: number): number {
   return liters * FUEL_PRICE_TRY_PER_L;
 }
+
+const COMPASS = ["kuzey", "kuzeydoğu", "doğu", "güneydoğu", "güney", "güneybatı", "batı", "kuzeybatı"];
+
+/** Initial bearing from a to b as one of eight Turkish compass words. */
+export function compassDirection(a: Coordinates, b: Coordinates): string {
+  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng));
+  const deg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  return COMPASS[Math.round(deg / 45) % 8];
+}
+
+/** Typical road-to-straight-line ratio band for Türkiye's intercity network (estimate). */
+export const ROAD_FACTOR_RANGE: [number, number] = [1.2, 1.4];

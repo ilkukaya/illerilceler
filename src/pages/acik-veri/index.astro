@@ -1,0 +1,101 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
+import Icon from "@/components/Icon.astro";
+import { siteConfig } from "@/config/site";
+import { POPULATION_YEAR } from "@/utils/rankings";
+import { datasetSchema } from "@/utils/seo";
+
+const path = "/acik-veri/";
+const files = [
+  { href: "/veri/iller.csv", label: "81 il — CSV", note: "Excel ve Google E-Tablolar ile açılır" },
+  { href: "/veri/iller.json", label: "81 il — JSON", note: "Uygulamalar ve API'ler için" },
+  { href: "/veri/ilceler.csv", label: "973 ilçe — CSV", note: "Excel ve Google E-Tablolar ile açılır" },
+  { href: "/veri/ilceler.json", label: "973 ilçe — JSON", note: "Uygulamalar ve API'ler için" },
+];
+const fields = [
+  ["plaka", "Plaka kodu (01–81)"],
+  ["il / ilce", "Resmî ad"],
+  ["nufus, nufus_yili", `TÜİK ADNKS ${POPULATION_YEAR} nüfusu`],
+  ["yuzolcumu_km2", "Yüzölçümü (km²), Harita Genel Müdürlüğü"],
+  ["rakim_m", "İl merkezi rakımı (m)"],
+  ["ilce_sayisi, mahalle_sayisi", "İdari birim sayıları"],
+  ["alan_kodlari", "Sabit telefon alan kodları"],
+  ["enlem, boylam", "İl merkezi koordinatı (WGS84)"],
+  ["komsu_iller", "Kara sınırı paylaşılan iller"],
+];
+const title = "Açık Veri: Türkiye İl ve İlçe Listesi (CSV, JSON) — Nüfus, Plaka, Alan Kodu";
+const description = `81 il ve 973 ilçenin nüfus (TÜİK ${POPULATION_YEAR}), yüzölçümü, plaka, alan kodu ve koordinat verisini ücretsiz CSV ve JSON olarak indirin.`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  schema={{
+    ...datasetSchema({ name: "Türkiye il ve ilçe verileri", description, path }),
+    distribution: files.map((f) => ({
+      "@type": "DataDownload",
+      encodingFormat: f.href.endsWith(".csv") ? "text/csv" : "application/json",
+      contentUrl: `${siteConfig.url}${f.href}`,
+    })),
+    temporalCoverage: String(POPULATION_YEAR),
+    spatialCoverage: { "@type": "Country", name: "Türkiye" },
+    isAccessibleForFree: true,
+  }}
+>
+  <div class="container-page max-w-4xl pt-4 sm:pt-6">
+    <Breadcrumbs items={[{ label: "Açık veri", href: path }]} />
+    <h1 class="mt-5 text-4xl leading-[1.1] sm:text-5xl">Açık veri</h1>
+    <p class="mt-4 text-lg leading-relaxed text-text-secondary">
+      Sitedeki il ve ilçe verilerini ücretsiz indirip kendi projelerinizde,
+      ödevlerinizde ve analizlerinizde kullanabilirsiniz. Kullanırken
+      <strong class="text-text-primary">{siteConfig.name}</strong>'a kaynak
+      olarak bağlantı vermenizi rica ederiz.
+    </p>
+
+    <ul class="mt-8 grid gap-3 sm:grid-cols-2">
+      {
+        files.map((f) => (
+          <li>
+            <a
+              href={f.href}
+              download
+              class="card card-hover flex items-center gap-4 p-4"
+            >
+              <Icon name="download" size={20} class="shrink-0 text-brand-primary" />
+              <span>
+                <span class="block font-semibold">{f.label}</span>
+                <span class="block text-sm text-text-secondary">{f.note}</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <h2 class="mt-12 text-2xl">Alanlar</h2>
+    <div class="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
+      <table class="data-table">
+        <thead><tr><th scope="col">Alan</th><th scope="col">Açıklama</th></tr></thead>
+        <tbody>
+          {fields.map(([k, v]) => <tr><td><code class="text-sm">{k}</code></td><td>{v}</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="mt-12 text-2xl">Kaynak ve lisans</h2>
+    <div class="prose-content mt-3">
+      <p>
+        Nüfus verileri Türkiye İstatistik Kurumu (TÜİK) Adrese Dayalı Nüfus
+        Kayıt Sistemi {POPULATION_YEAR} sonuçlarından; yüzölçümü ve rakım Harita
+        Genel Müdürlüğü'nden; alan kodları Türk Telekom kayıtlarından
+        derlenmiştir. Komşuluk bilgisi il sınırı geometrisinden hesaplanmıştır.
+      </p>
+      <p>
+        Dosyalar her yeni TÜİK yayınıyla güncellenir. Resmî işlemler için
+        ilgili kurumların güncel verilerini esas alın.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

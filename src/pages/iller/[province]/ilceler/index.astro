@@ -1,224 +1,111 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import PageContainer from "@/components/layout/PageContainer.astro";
 import Breadcrumbs from "@/components/layout/Breadcrumbs.astro";
-import DistrictCard from "@/components/cards/DistrictCard.astro";
-import Icon from "@/components/Icon.astro";
-import { getProvinceBySlug } from "@/data/provinces";
-import {
-  districtNamesByProvince,
-  getDistrictsForProvince,
-} from "@/data/districts";
+import SortableTable from "@/components/content/SortableTable.astro";
+import FAQAccordion from "@/components/content/FAQAccordion.astro";
+import LocatorMap from "@/components/geography/LocatorMap.astro";
+import AdSlot from "@/components/content/AdSlot.astro";
+import { provinces } from "@/data/provinces";
+import { getDistrictsForProvince } from "@/data/districts";
 import { formatNumber } from "@/utils/format";
+import { density, POPULATION_YEAR } from "@/utils/rankings";
+import { genitive, copula, withAnd } from "@/utils/turkish";
+import { provincePath, districtPath, districtListPath } from "@/utils/links";
+import { itemListSchema, webPageSchema, faqPageSchema } from "@/utils/seo";
 
 export function getStaticPaths() {
-  return Object.keys(districtNamesByProvince).map((provinceSlug) => ({
-    params: { province: provinceSlug },
-  }));
+  return provinces.map((p) => ({ params: { province: p.slug }, props: { province: p } }));
 }
 
-const { province: provinceSlug } = Astro.params;
-const province = getProvinceBySlug(provinceSlug!)!;
-const districts = getDistrictsForProvince(provinceSlug!);
-const totalPopulation = districts.reduce(
-  (sum, d) => sum + (d.population ?? 0),
-  0,
-);
-const totalNeighborhoods = districts.reduce(
-  (sum, d) => sum + (d.neighborhoodCount ?? 0),
-  0,
-);
-const path = `/iller/${provinceSlug}/ilceler/`;
+const { province } = Astro.props as { province: (typeof provinces)[number] };
+const districts = getDistrictsForProvince(province.slug);
+const byPop = [...districts].sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
+const byArea = [...districts].sort((a, b) => (b.areaKm2 ?? 0) - (a.areaKm2 ?? 0));
+const alpha = [...districts].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+const path = districtListPath(province.slug);
+const totalMahalle = districts.reduce((s, d) => s + (d.neighborhoodCount ?? 0), 0);
+
+const rows = byPop.map((d) => {
+  const dd = density(d.population, d.areaKm2);
+  return {
+    name: { text: d.name, sort: d.name, href: districtPath(province.slug, d.slug) },
+    population: { text: d.population ? formatNumber(d.population) : "—", sort: d.population ?? 0 },
+    area: { text: d.areaKm2 ? formatNumber(d.areaKm2) : "—", sort: d.areaKm2 ?? 0 },
+    density: { text: dd ? formatNumber(Math.round(dd)) : "—", sort: dd ?? 0 },
+    mahalle: { text: d.neighborhoodCount ? String(d.neighborhoodCount) : "—", sort: d.neighborhoodCount ?? 0 },
+  };
+});
+
+const lead = `${genitive(province.name)} ${districts.length} ilçesi vardır: ${withAnd(alpha.map((d) => d.name))}.${
+  byPop.length > 1
+    ? ` En kalabalık ilçe ${formatNumber(byPop[0].population ?? 0)} kişiyle ${byPop[0].name}, yüzölçümü en büyük ilçe ${formatNumber(byArea[0].areaKm2 ?? 0)} km² ile ${copula(byArea[0].name)}.`
+    : ""
+}`;
+
+const faqs = [
+  { question: `${province.name} kaç ilçe var?`, answer: `${genitive(province.name)} ${districts.length} ilçesi vardır.` },
+  { question: `${genitive(province.name)} ilçeleri nelerdir?`, answer: `${withAnd(alpha.map((d) => d.name))}.` },
+  ...(byPop.length > 1
+    ? [
+        { question: `${genitive(province.name)} en kalabalık ilçesi hangisidir?`, answer: `TÜİK ${POPULATION_YEAR} verilerine göre ${formatNumber(byPop[0].population ?? 0)} kişiyle ${copula(byPop[0].name)}.` },
+        { question: `${genitive(province.name)} en az nüfuslu ilçesi hangisidir?`, answer: `${formatNumber(byPop[byPop.length - 1].population ?? 0)} kişiyle ${copula(byPop[byPop.length - 1].name)}.` },
+      ]
+    : []),
+  { question: `${province.name} kaç mahalle var?`, answer: `${genitive(province.name)} ilçelerinde toplam ${formatNumber(totalMahalle)} mahalle bulunur.` },
+];
+
+const title = `${province.name} İlçeleri: ${districts.length} İlçe, Nüfusları ve Mahalle Sayıları (${POPULATION_YEAR})`;
+const description = `${genitive(province.name)} ${districts.length} ilçesi nüfusa göre sıralı: ${byPop.slice(0, 4).map((d) => d.name).join(", ")}… TÜİK ${POPULATION_YEAR} nüfusu, yüzölçümü, yoğunluk ve mahalle sayısı.`;
 ---
 
 <BaseLayout
-  title={`${province.name} İlçeleri — Tüm İlçeler Listesi`}
-  description={`${province.name} iline bağlı ${districts.length} ilçenin listesi, nüfus ve mahalle bilgileriyle birlikte.`}
+  title={title}
+  description={description}
   path={path}
+  image={`/og/provinces/${province.slug}.jpg`}
+  schema={[
+    webPageSchema({ name: title, path, description }),
+    itemListSchema(byPop.map((d) => ({ name: d.name, href: districtPath(province.slug, d.slug) }))),
+    faqPageSchema(faqs),
+  ]}
 >
-  <PageContainer class="py-4">
+  <div class="container-page pt-4 sm:pt-6">
     <Breadcrumbs
       items={[
         { label: "İller", href: "/iller/" },
-        { label: province.name, href: `/iller/${provinceSlug}/` },
+        { label: province.name, href: provincePath(province.slug) },
         { label: "İlçeler", href: path },
       ]}
     />
-  </PageContainer>
-
-  <PageContainer class="pb-16">
-    <h1 class="text-3xl font-extrabold text-text-primary sm:text-4xl">
-      {province.name} İlçeleri
-    </h1>
-    <p class="prose-content mt-3 max-w-2xl">
-      {province.name} iline bağlı {districts.length} ilçe bulunmaktadır.
-    </p>
-
-    <div class="mt-6 grid grid-cols-3 gap-3 sm:max-w-lg">
-      <div class="card p-3 text-center">
-        <p class="text-xl font-extrabold text-text-primary">
-          {districts.length}
-        </p>
-        <p class="text-xs text-text-secondary">İlçe Sayısı</p>
-      </div>
-      <div class="card p-3 text-center">
-        <p class="text-xl font-extrabold text-text-primary">
-          {totalNeighborhoods ? formatNumber(totalNeighborhoods) : "—"}
-        </p>
-        <p class="text-xs text-text-secondary">Toplam Mahalle</p>
-      </div>
-      <div class="card p-3 text-center">
-        <p class="text-xl font-extrabold text-text-primary">
-          {totalPopulation ? formatNumber(totalPopulation) : "—"}
-        </p>
-        <p class="text-xs text-text-secondary">Toplam Nüfus</p>
-      </div>
-    </div>
-
-    <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-      <div class="relative max-w-xs flex-1">
-        <Icon
-          name="search"
-          size={17}
-          class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+    <div class="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <article class="min-w-0">
+        <p class="section-eyebrow">Plaka {province.plateCode}</p>
+        <h1 class="mt-2 text-4xl leading-[1.1] sm:text-5xl">{province.name} ilçeleri</h1>
+        <p class="answer-box mt-6">{lead}</p>
+        <SortableTable
+          class="mt-8"
+          id="ilceler"
+          rank
+          caption={`${province.name} ilçeleri`}
+          columns={[
+            { key: "name", label: "İlçe" },
+            { key: "population", label: "Nüfus", numeric: true },
+            { key: "area", label: "km²", numeric: true },
+            { key: "density", label: "Kişi/km²", numeric: true },
+            { key: "mahalle", label: "Mahalle", numeric: true },
+          ]}
+          rows={rows}
         />
-        <input
-          id="district-search"
-          type="text"
-          placeholder="İlçe ara..."
-          class="h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-brand-primary"
-        />
-      </div>
-      <div class="flex items-center gap-2">
-        <select
-          id="district-sort"
-          class="h-11 rounded-xl border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-brand-primary"
-        >
-          <option value="name-asc">Alfabetik (A-Z)</option>
-          <option value="population-desc">Nüfusa Göre</option>
-        </select>
-        <div
-          class="flex items-center rounded-xl border border-border p-0.5"
-          role="group"
-          aria-label="Görünüm"
-        >
-          <button
-            type="button"
-            id="view-grid"
-            class="view-toggle-btn rounded-lg p-2"
-            aria-pressed="true"
-            aria-label="Izgara görünümü"
-          >
-            <Icon name="layout-grid" size={16} />
-          </button>
-          <button
-            type="button"
-            id="view-list"
-            class="view-toggle-btn rounded-lg p-2"
-            aria-pressed="false"
-            aria-label="Liste görünümü"
-          >
-            <Icon name="list" size={16} />
-          </button>
+        <p class="mt-2 text-xs text-text-muted">Kaynak: TÜİK ADNKS {POPULATION_YEAR}, Harita Genel Müdürlüğü.</p>
+        <AdSlot variant="in-article" />
+        <div class="mt-10"><FAQAccordion faqs={faqs} /></div>
+      </article>
+      <aside>
+        <div class="card p-4 lg:sticky lg:top-24">
+          <LocatorMap highlight={[province.slug]} label={`${genitive(province.name)} konumu`} />
+          <a href={provincePath(province.slug)} class="link mt-3 inline-block text-sm">{province.name} il sayfası →</a>
         </div>
-      </div>
+      </aside>
     </div>
-
-    <div
-      class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      id="district-grid"
-    >
-      {
-        districts.map((d) => (
-          <div
-            class="district-grid-item"
-            data-name={d.name}
-            data-population={d.population ?? 0}
-          >
-            <DistrictCard district={d} provinceSlug={provinceSlug!} />
-          </div>
-        ))
-      }
-    </div>
-    <p
-      id="district-empty"
-      class="hidden py-16 text-center text-sm text-text-secondary"
-    >
-      Aramanızla eşleşen ilçe bulunamadı.
-    </p>
-  </PageContainer>
+  </div>
 </BaseLayout>
-
-<script>
-  const searchInput = document.getElementById(
-    "district-search",
-  ) as HTMLInputElement | null;
-  const sortSelect = document.getElementById(
-    "district-sort",
-  ) as HTMLSelectElement | null;
-  const grid = document.getElementById("district-grid");
-  const emptyState = document.getElementById("district-empty");
-  const items = Array.from(
-    document.querySelectorAll<HTMLElement>(".district-grid-item"),
-  );
-  const gridBtn = document.getElementById("view-grid");
-  const listBtn = document.getElementById("view-list");
-
-  function applyFilter() {
-    const q = (searchInput?.value ?? "").trim().toLocaleLowerCase("tr-TR");
-    let visible = 0;
-    items.forEach((el) => {
-      const match =
-        !q || (el.dataset.name ?? "").toLocaleLowerCase("tr-TR").includes(q);
-      el.classList.toggle("hidden", !match);
-      if (match) visible++;
-    });
-    emptyState?.classList.toggle("hidden", visible !== 0);
-  }
-
-  function applySort() {
-    const value = sortSelect?.value ?? "name-asc";
-    const sortedItems = [...items].sort((a, b) => {
-      if (value === "population-desc")
-        return Number(b.dataset.population) - Number(a.dataset.population);
-      return (a.dataset.name ?? "").localeCompare(b.dataset.name ?? "", "tr");
-    });
-    sortedItems.forEach((el) => grid?.appendChild(el));
-  }
-
-  searchInput?.addEventListener("input", applyFilter);
-  sortSelect?.addEventListener("change", applySort);
-
-  gridBtn?.addEventListener("click", () => {
-    grid?.classList.remove("district-grid--list");
-    gridBtn.setAttribute("aria-pressed", "true");
-    listBtn?.setAttribute("aria-pressed", "false");
-  });
-  listBtn?.addEventListener("click", () => {
-    grid?.classList.add("district-grid--list");
-    listBtn.setAttribute("aria-pressed", "true");
-    gridBtn?.setAttribute("aria-pressed", "false");
-  });
-</script>
-
-<style>
-  .view-toggle-btn[aria-pressed="true"] {
-    background-color: var(--brand-purple-soft);
-    color: var(--brand-primary);
-  }
-  .view-toggle-btn[aria-pressed="false"] {
-    color: var(--color-text-muted);
-  }
-  #district-grid.district-grid--list {
-    grid-template-columns: 1fr;
-  }
-  #district-grid.district-grid--list .card {
-    flex-direction: row;
-    align-items: center;
-  }
-  #district-grid.district-grid--list .card > div:first-child {
-    width: 96px;
-    height: 72px;
-    flex-shrink: 0;
-  }
-</style>

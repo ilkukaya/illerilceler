@@ -1,0 +1,131 @@
+---
+/**
+ * "Plan a trip" block for province/district pages — the site's main
+ * affiliate placement. Links are useful as-is (plain searches); once the
+ * affiliate IDs in src/config/monetization.ts are set, the same links carry
+ * the partner parameters and are marked rel="sponsored".
+ */
+import Icon from "@/components/Icon.astro";
+import { monetization } from "@/config/monetization";
+import { locative, dative } from "@/utils/turkish";
+
+interface Props {
+  place: string;
+  province: string;
+  class?: string;
+}
+
+const { place, province, class: className = "" } = Astro.props;
+const { bookingAid, travelpayoutsMarker, obiletPartner } = monetization.affiliate;
+
+const destination =
+  place === province ? `${place}, Türkiye` : `${place}, ${province}, Türkiye`;
+
+const booking = new URL("https://www.booking.com/searchresults.tr.html");
+booking.searchParams.set("ss", destination);
+booking.searchParams.set("lang", "tr");
+if (bookingAid) booking.searchParams.set("aid", bookingAid);
+
+const flights = travelpayoutsMarker
+  ? `https://www.aviasales.com/?marker=${encodeURIComponent(travelpayoutsMarker)}&locale=tr`
+  : "https://www.skyscanner.com.tr/";
+
+const bus = new URL("https://www.obilet.com/");
+if (obiletPartner) bus.searchParams.set("partner", obiletPartner);
+
+const cars = travelpayoutsMarker
+  ? `https://www.discovercars.com/tr?a_aid=${encodeURIComponent(travelpayoutsMarker)}`
+  : "https://www.google.com/search?q=" + encodeURIComponent(`${province} araç kiralama`);
+
+const anyAffiliate = Boolean(bookingAid || travelpayoutsMarker || obiletPartner);
+const rel = anyAffiliate ? "sponsored nofollow noopener" : "nofollow noopener";
+
+const items = [
+  {
+    icon: "bed-double",
+    title: `${locative(place)} otel ara`,
+    meta: "Booking.com",
+    href: booking.toString(),
+  },
+  {
+    icon: "bus",
+    title: `${dative(province)} otobüs bileti`,
+    meta: "oBilet",
+    href: bus.toString(),
+  },
+  {
+    icon: "plane",
+    title: "Uçak bileti karşılaştır",
+    meta: travelpayoutsMarker ? "Aviasales" : "Skyscanner",
+    href: flights,
+  },
+  {
+    icon: "car",
+    title: "Araç kiralama",
+    meta: travelpayoutsMarker ? "DiscoverCars" : "Karşılaştır",
+    href: cars,
+  },
+];
+---
+
+<section
+  class={`rounded-xl border border-border bg-surface p-4 sm:p-5 ${className}`}
+  aria-labelledby="seyahat-heading"
+  id="seyahat"
+>
+  <div class="flex items-baseline justify-between gap-3">
+    <h2 id="seyahat-heading" class="font-sans text-base font-semibold">
+      {place} seyahati
+    </h2>
+    {
+      anyAffiliate && (
+        <span class="text-[11px] text-text-muted">Sponsorlu bağlantılar</span>
+      )
+    }
+  </div>
+  <ul class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+    {
+      items.map((it) => (
+        <li>
+          <a
+            href={it.href}
+            target="_blank"
+            rel={rel}
+            class="flex min-h-12 items-center gap-3 rounded-lg border border-border px-3 py-2 transition-colors hover:border-text-primary"
+            data-outbound={it.meta}
+          >
+            <Icon name={it.icon} size={18} class="shrink-0 text-text-secondary" />
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-medium text-text-primary">
+                {it.title}
+              </span>
+              <span class="block text-xs text-text-muted">{it.meta}</span>
+            </span>
+            <Icon name="arrow-up-right" size={15} class="shrink-0 text-text-muted" />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  {
+    anyAffiliate && (
+      <p class="mt-3 text-xs leading-relaxed text-text-muted">
+        Bu bağlantılar üzerinden yapılan rezervasyonlardan, size ek maliyet
+        olmadan komisyon alabiliriz. Bu gelir sitenin ücretsiz kalmasını
+        sağlar.
+      </p>
+    )
+  }
+</section>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>("a[data-outbound]").forEach((a) =>
+    a.addEventListener("click", () => {
+      const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+      w.gtag?.("event", "affiliate_click", {
+        partner: a.dataset.outbound,
+        page: location.pathname,
+      });
+    }),
+  );
+</script>

@@ -1,0 +1,24 @@
+---
+import ProvinceRanking from "@/components/content/ProvinceRanking.astro";
+import { formatNumber } from "@/utils/format";
+import { provincesByElevation as r } from "@/utils/rankings";
+import { copula } from "@/utils/turkish";
+
+const last = r[r.length - 1];
+const intro = `İl merkezinin denizden yüksekliğine göre Türkiye'nin en yüksek ili ${formatNumber(r[0].elevationM!)} metre ile ${copula(r[0].name)}. Onu ${r[1].name} (${formatNumber(r[1].elevationM!)} m) ve ${r[2].name} (${formatNumber(r[2].elevationM!)} m) izler. En alçak il merkezi ise ${formatNumber(last.elevationM!)} metre ile ${copula(last.name)}.`;
+const faqs = [
+  { question: "Rakımı en yüksek il hangisidir?", answer: `İl merkezi rakımına göre ${formatNumber(r[0].elevationM!)} metre ile ${copula(r[0].name)}.` },
+  { question: "Rakımı en düşük il hangisidir?", answer: `${formatNumber(last.elevationM!)} metre ile ${copula(last.name)}.` },
+  { question: "Türkiye'nin en yüksek noktası neresidir?", answer: "Türkiye'nin en yüksek noktası 5.137 metre ile Ağrı Dağı'dır." },
+];
+---
+
+<ProvinceRanking
+  metric="elevation"
+  path="/istatistikler/rakima-gore-iller/"
+  title="Rakıma Göre İller — En Yüksek ve En Alçak İl Merkezleri"
+  h1="Rakıma göre iller"
+  description={`81 il merkezinin denizden yüksekliği (rakım) sıralaması. En yüksek il ${r[0].name} (${formatNumber(r[0].elevationM!)} m), en alçak il ${last.name}.`}
+  intro={intro}
+  faqs={faqs}
+/>

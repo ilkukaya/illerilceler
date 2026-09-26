@@ -6,88 +6,60 @@ export interface TocItem {
 
 interface Props {
   items: TocItem[];
+  title?: string;
 }
 
-const { items } = Astro.props;
+const { items, title = "Bu sayfada" } = Astro.props;
 ---
 
-<div
-  class="sticky top-16 z-30 -mx-4 border-b border-border bg-surface/95 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:border"
->
-  <nav
-    aria-label="Sayfa içi bölümler"
-    class="scrollbar-none overflow-x-auto px-4 sm:px-2"
-  >
-    <ul class="flex min-w-max items-center gap-1 py-2">
-      {
-        items.map((item, index) => (
+{
+  items.length > 1 && (
+    <nav aria-label={title} class="toc text-sm">
+      <p class="section-eyebrow mb-2">{title}</p>
+      <ul class="space-y-0.5 border-l border-border">
+        {items.map((item) => (
           <li>
             <a
               href={`#${item.id}`}
-              data-toc-link
-              data-target={item.id}
-              class:list={[
-                "toc-link inline-flex items-center rounded-lg px-3 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors",
-                index === 0
-                  ? "text-brand-primary bg-brand-purple-soft"
-                  : "text-text-secondary hover:bg-surface-muted hover:text-text-primary",
-              ]}
+              data-toc-link={item.id}
+              class="-ml-px block border-l-2 border-transparent py-1 pl-3 text-text-secondary hover:border-text-primary hover:text-text-primary"
             >
               {item.label}
             </a>
           </li>
-        ))
-      }
-    </ul>
-  </nav>
-</div>
+        ))}
+      </ul>
+    </nav>
+  )
+}
 
 <script>
-  function initToc(root: Document | HTMLElement) {
-    const links = Array.from(
-      root.querySelectorAll<HTMLAnchorElement>("[data-toc-link]"),
+  const links = document.querySelectorAll<HTMLAnchorElement>("[data-toc-link]");
+  if (links.length && "IntersectionObserver" in window) {
+    const byId = new Map(
+      Array.from(links).map((a) => [a.dataset.tocLink ?? "", a]),
     );
-    if (links.length === 0) return;
-
-    const sections = links
-      .map((link) => document.getElementById(link.dataset.target ?? ""))
-      .filter((el): el is HTMLElement => Boolean(el));
-
-    if (sections.length === 0) return;
-
-    let currentActiveId: string | null = null;
-
-    const setActive = (id: string) => {
-      if (id === currentActiveId) return;
-      currentActiveId = id;
-      links.forEach((link) => {
-        const active = link.dataset.target === id;
-        link.classList.toggle("text-brand-primary", active);
-        link.classList.toggle("bg-brand-purple-soft", active);
-        link.classList.toggle("text-text-secondary", !active);
-        if (active) {
-          const nav = link.closest("nav");
-          if (nav) {
-            const target =
-              link.offsetLeft - nav.clientWidth / 2 + link.offsetWidth / 2;
-            nav.scrollTo({ left: target, behavior: "smooth" });
-          }
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(
+    const io = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          links.forEach((l) => l.removeAttribute("aria-current"));
+          byId.get(e.target.id)?.setAttribute("aria-current", "true");
+        }
       },
-      { rootMargin: "-140px 0px -60% 0px", threshold: 0 },
+      { rootMargin: "-20% 0px -70% 0px" },
     );
-
-    sections.forEach((section) => observer.observe(section));
+    byId.forEach((_, id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
   }
-
-  initToc(document);
 </script>
+
+<style is:global>
+  .toc a[aria-current="true"] {
+    border-color: var(--brand-primary);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+</style>

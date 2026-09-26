@@ -2,12 +2,12 @@
 import Icon from "@/components/Icon.astro";
 
 const popularQueries = [
-  "47 nerenin plakası?",
-  "312 nerenin kodu?",
-  "İstanbul ilçeleri",
-  "Kadıköy mahalleleri",
-  "34718 posta kodu",
-  "Türkiye'nin en büyük ili",
+  { label: "34", hint: "plaka" },
+  { label: "0312", hint: "alan kodu" },
+  { label: "İstanbul", hint: "il" },
+  { label: "Kadıköy", hint: "ilçe" },
+  { label: "Mardin", hint: "il" },
+  { label: "Antalya", hint: "il" },
 ];
 ---
 
@@ -18,75 +18,74 @@ const popularQueries = [
   aria-modal="true"
   aria-label="Site içi arama"
 >
+  <div id="global-search-backdrop" class="absolute inset-0 bg-black/45"></div>
   <div
-    id="global-search-backdrop"
-    class="absolute inset-0 bg-[#0B1020]/55 backdrop-blur-[2px]"
+    class="relative mx-auto mt-0 w-full max-w-xl sm:mt-[10vh] sm:w-[92%]"
   >
-  </div>
-  <div class="relative mx-auto mt-[8vh] w-[92%] max-w-xl">
-    <div class="card overflow-hidden !rounded-3xl shadow-popover">
-      <div class="flex items-center gap-3 border-b border-border px-4 py-3.5">
-        <Icon name="search" size={19} class="text-text-muted shrink-0" />
+    <div
+      class="overflow-hidden border-border bg-surface shadow-popover sm:rounded-xl sm:border"
+    >
+      <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+        <Icon name="search" size={19} class="shrink-0 text-text-muted" />
         <input
           id="global-search-input"
           type="search"
           autocomplete="off"
           spellcheck="false"
-          placeholder="Şehir, ilçe, plaka, alan kodu veya posta kodu ara..."
-          class="w-full bg-transparent text-[15px] text-text-primary placeholder:text-text-muted outline-none"
+          enterkeyhint="search"
+          placeholder="İl, ilçe, plaka, alan kodu, posta kodu…"
+          class="h-10 w-full bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted"
           aria-label="Arama sorgusu"
+          aria-controls="global-search-results"
+          aria-autocomplete="list"
         />
-        <kbd
-          class="hidden sm:inline-flex items-center rounded-md border border-border px-1.5 py-0.5 text-[11px] font-semibold text-text-muted"
-          >ESC</kbd
+        <button
+          type="button"
+          id="global-search-close"
+          class="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium text-text-muted"
+          aria-label="Aramayı kapat">Esc</button
         >
       </div>
 
       <div id="global-search-empty" class="px-4 py-4">
-        <p class="mb-2.5 text-xs font-semibold text-text-muted">
-          Popüler Aramalar
-        </p>
+        <p class="section-eyebrow mb-2.5">Örnek aramalar</p>
         <div class="flex flex-wrap gap-2">
           {
             popularQueries.map((q) => (
               <button
                 type="button"
-                class="global-search-suggestion pill !py-1.5"
-                data-query={q}
+                class="global-search-suggestion pill"
+                data-query={q.label}
               >
-                {q}
+                <span class="font-semibold text-text-primary">{q.label}</span>
+                <span class="text-text-muted">{q.hint}</span>
               </button>
             ))
           }
         </div>
       </div>
 
-      <div
+      <ul
         id="global-search-results"
-        class="hidden max-h-[60vh] overflow-y-auto p-2"
+        class="hidden max-h-[65vh] overflow-y-auto p-1.5"
+        role="listbox"
+        aria-label="Arama sonuçları"
       >
-      </div>
+      </ul>
 
       <div id="global-search-noresults" class="hidden px-4 py-10 text-center">
         <p class="text-sm font-semibold text-text-primary">Sonuç bulunamadı</p>
         <p class="mt-1 text-sm text-text-secondary">
-          Farklı bir arama terimi deneyebilir veya tüm sonuçlar sayfasına göz
-          atabilirsiniz.
+          Yazımı kontrol edin ya da il adıyla deneyin.
         </p>
       </div>
 
       <div
-        class="flex items-center justify-between border-t border-border px-4 py-2.5"
+        class="hidden items-center justify-between border-t border-border px-4 py-2.5 text-xs text-text-muted sm:flex"
       >
-        <span class="text-xs text-text-muted"
-          >Sonuçları görüntülemek için yazın</span
-        >
-        <a
-          id="global-search-viewall"
-          href="/arama/"
-          class="text-xs font-semibold text-brand-primary hover:text-brand-primary-dark"
-        >
-          Tüm sonuçlar sayfası →
+        <span>↑ ↓ ile gezin · Enter ile açın</span>
+        <a id="global-search-viewall" href="/arama/" class="link">
+          Tüm sonuçlar
         </a>
       </div>
     </div>
@@ -95,90 +94,82 @@ const popularQueries = [
 
 <script>
   import { searchAll } from "@/utils/search";
+  import { loadSearchIndex, typeLabels, escapeHtml } from "@/utils/searchClient";
   import type { SearchIndexEntry } from "@/types";
 
   const dialog = document.getElementById("global-search");
   const backdrop = document.getElementById("global-search-backdrop");
-  const input = document.getElementById(
-    "global-search-input",
-  ) as HTMLInputElement | null;
+  const closeBtn = document.getElementById("global-search-close");
+  const input = document.getElementById("global-search-input") as HTMLInputElement | null;
   const emptyState = document.getElementById("global-search-empty");
   const resultsEl = document.getElementById("global-search-results");
   const noResultsEl = document.getElementById("global-search-noresults");
-  const viewAllLink = document.getElementById(
-    "global-search-viewall",
-  ) as HTMLAnchorElement | null;
+  const viewAllLink = document.getElementById("global-search-viewall") as HTMLAnchorElement | null;
 
-  let index: SearchIndexEntry[] | null = null;
+  let current: SearchIndexEntry[] = [];
+  let active = -1;
 
-  const typeLabels: Record<string, string> = {
-    province: "İl",
-    district: "İlçe",
-    neighborhood: "Mahalle",
-    plate: "Plaka",
-    "area-code": "Alan Kodu",
-    "postal-code": "Posta Kodu",
-    page: "Sayfa",
-  };
-
-  async function ensureIndex() {
-    if (!index) {
-      const mod = await import("@/data/searchIndex");
-      index = mod.searchIndex;
-    }
-    return index;
+  function setActive(i: number) {
+    const items = resultsEl?.querySelectorAll<HTMLElement>("[role=option]") ?? [];
+    active = Math.max(-1, Math.min(i, items.length - 1));
+    items.forEach((el, k) => el.setAttribute("aria-selected", String(k === active)));
+    items[active]?.scrollIntoView({ block: "nearest" });
   }
 
   function renderResults(results: SearchIndexEntry[]) {
     if (!resultsEl) return;
     resultsEl.innerHTML = results
-      .slice(0, 8)
       .map(
-        (r) => `
-        <a href="${r.href}" class="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-muted">
-          <span class="min-w-0">
-            <span class="block truncate text-sm font-semibold text-text-primary">${r.title}</span>
-            ${r.subtitle ? `<span class="block truncate text-xs text-text-secondary">${r.subtitle}</span>` : ""}
-          </span>
-          <span class="shrink-0 rounded-full bg-surface-muted px-2 py-1 text-[11px] font-semibold text-text-muted">${typeLabels[r.type] ?? ""}</span>
-        </a>`,
+        (r, i) => `
+        <li role="option" id="gs-opt-${i}" aria-selected="false">
+          <a href="${r.href}" class="gs-item flex items-center justify-between gap-3 rounded-lg px-3 py-2.5">
+            <span class="min-w-0">
+              <span class="block truncate text-[15px] font-semibold text-text-primary">${escapeHtml(r.title)}</span>
+              ${r.subtitle ? `<span class="block truncate text-xs text-text-secondary">${escapeHtml(r.subtitle)}</span>` : ""}
+            </span>
+            <span class="chip shrink-0 !text-[11px]">${typeLabels[r.type] ?? ""}</span>
+          </a>
+        </li>`,
       )
       .join("");
+    setActive(results.length ? 0 : -1);
   }
 
   async function runSearch(query: string) {
     const trimmed = query.trim();
     if (viewAllLink)
-      viewAllLink.href = trimmed
-        ? `/arama/?q=${encodeURIComponent(trimmed)}`
-        : "/arama/";
+      viewAllLink.href = trimmed ? `/arama/?q=${encodeURIComponent(trimmed)}` : "/arama/";
 
     if (!trimmed) {
+      current = [];
       emptyState?.classList.remove("hidden");
       resultsEl?.classList.add("hidden");
       noResultsEl?.classList.add("hidden");
       return;
     }
 
-    const idx = await ensureIndex();
-    const results = searchAll(trimmed, idx, { limit: 8 });
-
+    const idx = await loadSearchIndex();
+    current = searchAll(trimmed, idx, { limit: 10 });
     emptyState?.classList.add("hidden");
-    if (results.length === 0) {
+    if (current.length === 0) {
       resultsEl?.classList.add("hidden");
       noResultsEl?.classList.remove("hidden");
     } else {
       noResultsEl?.classList.add("hidden");
       resultsEl?.classList.remove("hidden");
-      renderResults(results);
+      renderResults(current);
     }
   }
 
-  function openDialog() {
+  function openDialog(prefill?: string | null) {
     dialog?.classList.remove("hidden");
     document.body.classList.add("overflow-hidden");
-    ensureIndex();
-    window.setTimeout(() => input?.focus(), 30);
+    loadSearchIndex();
+    if (input && typeof prefill === "string") {
+      input.value = prefill;
+      runSearch(prefill);
+    }
+    window.setTimeout(() => input?.focus(), 20);
   }
 
   function closeDialog() {
@@ -186,12 +177,17 @@ const popularQueries = [
     document.body.classList.remove("overflow-hidden");
   }
 
-  window.addEventListener("illerilceler:open-search", openDialog);
+  window.addEventListener("illerilceler:open-search", (e) =>
+    openDialog((e as CustomEvent<string | null>).detail),
+  );
   backdrop?.addEventListener("click", closeDialog);
+  closeBtn?.addEventListener("click", closeDialog);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !dialog?.classList.contains("hidden"))
-      closeDialog();
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    const open = !dialog?.classList.contains("hidden");
+    if (e.key === "Escape" && open) closeDialog();
+    const target = e.target as HTMLElement;
+    const typing = /INPUT|TEXTAREA|SELECT/.test(target.tagName) || target.isContentEditable;
+    if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") || (e.key === "/" && !typing)) {
       e.preventDefault();
       openDialog();
     }
@@ -200,12 +196,22 @@ const popularQueries = [
   let debounceTimer: ReturnType<typeof setTimeout>;
   input?.addEventListener("input", () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => runSearch(input.value), 120);
+    debounceTimer = setTimeout(() => runSearch(input.value), 90);
   });
 
   input?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && input.value.trim()) {
-      window.location.href = `/arama/?q=${encodeURIComponent(input.value.trim())}`;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive(active + 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive(active - 1);
+    } else if (e.key === "Enter" && input.value.trim()) {
+      e.preventDefault();
+      const target = current[active >= 0 ? active : 0];
+      window.location.href = target
+        ? target.href
+        : `/arama/?q=${encodeURIComponent(input.value.trim())}`;
     }
   });
 
@@ -218,3 +224,10 @@ const popularQueries = [
     });
   });
 </script>
+
+<style is:global>
+  #global-search-results [aria-selected="true"] .gs-item,
+  #global-search-results .gs-item:hover {
+    background: var(--surface-muted);
+  }
+</style>
