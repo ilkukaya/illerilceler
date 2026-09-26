@@ -59,7 +59,9 @@ const anyTracking = Boolean(gaId) || adsEnabled;
             { crossorigin: "anonymous" },
           );
           ads.onload = function () {
-            document.querySelectorAll("ins.adsbygoogle:not([data-adsbygoogle-status])").forEach(function () {
+            document.querySelectorAll("ins.adsbygoogle:not([data-adsbygoogle-status])").forEach(function (el) {
+              // Skip units hidden at this breakpoint (e.g. desktop-only sidebar on phones).
+              if (!el.offsetWidth) return;
               try {
                 (window.adsbygoogle = window.adsbygoogle || []).push({});
               } catch (e) {}

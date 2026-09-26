@@ -1,295 +1,80 @@
-# illerilceler.com — Türkiye Bilgi Merkezi
+# illerilceler.com — Türkiye'nin 81 İli ve 973 İlçesi
 
-Türkiye'nin illeri, ilçeleri, mahalleleri, plaka kodları, alan kodları, posta kodları ve coğrafi bilgileri için
-tasarlanmış, hızlı, erişilebilir ve SEO/AEO odaklı bir bilgi platformu. Astro ile statik olarak üretilir,
-minimal JavaScript kullanır ve on binlerce sayfaya ölçeklenebilecek bir veri/komponent mimarisiyle kurulmuştur.
+Türkiye'nin illeri ve ilçeleri için resmî verilere (TÜİK ADNKS 2025, Harita Genel Müdürlüğü, Türk
+Telekom) dayanan, hızlı ve SEO/AEO/GEO odaklı bilgi rehberi. Astro ile statik üretilir (~4.700
+sayfa), Netlify'da yayınlanır.
 
-## İçindekiler
+> **Durum, yapılanlar ve yapılacaklar için:** [`docs/YOL-HARITASI.md`](docs/YOL-HARITASI.md)
 
-- [Özellikler](#özellikler)
-- [Teknoloji Yığını](#teknoloji-yığını)
-- [Klasör Yapısı](#klasör-yapısı)
-- [Yerel Geliştirme](#yerel-geliştirme)
-- [Build Komutları](#build-komutları)
-- [Veri Modeli](#veri-modeli)
-- [Görsel Sistemi](#görsel-sistemi)
-- [Yeni İçerik Ekleme](#yeni-i̇çerik-ekleme)
-- [SEO / AEO Mimarisi](#seo--aeo-mimarisi)
-- [Erişilebilirlik ve Performans](#erişilebilirlik-ve-performans)
-- [Reklam Alanları](#reklam-alanları)
-- [Deployment](#deployment)
-- [Kapsam ve Sonraki Adımlar](#kapsam-ve-sonraki-adımlar)
-
-## Özellikler
-
-- **Anasayfa** — arama, popüler aramalar, kategori menüsü, şematik Türkiye haritası, ulusal istatistikler, günün
-  bilgisi, eğitim köşesi ve hızlı araçlar.
-- **İl / ilçe sayfaları** — 81 ilin ve 973 ilçenin tamamı için gerçek temel istatistiklerle (nüfus, yüzölçümü,
-  mahalle sayısı) özet kartlar, konum haritası, SSS ve ilgili aramalar; 12 öncelikli il ve 45 öncelikli ilçe
-  için ayrıca uzun formatlı tanıtım içeriği (tarihçe, ekonomi, turizm, ulaşım, popüler yerler).
-- **Kod sayfaları** — plaka kodu, alan kodu ve posta kodu için "kısa cevap" bloklu, AEO'ya uygun sayfalar
-  (`/plaka-kodlari/47/`, `/alan-kodlari/312/`, `/posta-kodlari/34718/`).
-- **Arama** — istemci tarafında çalışan, Türkçe karakter normalizasyonlu fuzzy arama; hem üst çubuktaki
-  komut-paleti (⌘K/Ctrl+K) hem de `/arama/` sonuç sayfası aynı indeksi kullanır.
-- **Türkiye Haritası** — 7 coğrafi bölgeyi gösteren, tıklanabilir/yakınlaştırılabilir şematik CSS-grid harita
-  (dış harita servisi kullanılmaz).
-- **Eğitim Köşesi** — çalışan çoktan seçmeli quiz, "81 İl ve Plakaları" flashcard çalışma aracı.
-- **Araçlar** — Haversine formülüyle gerçek koordinat hesaplaması yapan şehirler arası mesafe hesaplayıcı ve
-  NOAA güneş açısı denklemleriyle çalışan güneş doğuşu/batışı hesaplayıcı.
-- **Karanlık mod**, tam duyarlı (responsive) tasarım, erişilebilir bileşenler (native `<details>` accordion,
-  odak halkaları, `aria-*` etiketleri, atla-bağlantısı).
-
-## Teknoloji Yığını
-
-- [Astro](https://astro.build) (statik çıktı, `output: "static"`)
-- TypeScript (strict mode)
-- Tailwind CSS v4 (`@tailwindcss/vite`, CSS-first tema tanımı)
-- Sıfır UI framework — etkileşimler vanilla TypeScript `<script>` adacıklarıyla yazılmıştır (React/Vue/Svelte
-  yoktur; bu ölçekte gerekmediği için bilinçli olarak eklenmemiştir)
-- [lucide-static](https://lucide.dev) ikon seti (build-time'da inline SVG olarak gömülür)
-- `@fontsource-variable/plus-jakarta-sans` (self-hosted değişken font)
-
-## Klasör Yapısı
-
-```text
-src/
-  components/
-    brand/        Logo, marka işareti
-    layout/        Header, Footer, Breadcrumbs, PageContainer, MobileMenu...
-    search/        Arama kutusu, komut paleti, sonuç kartı
-    cards/         StatCard, CategoryCard, CityCard, DistrictCard...
-    geography/      TurkeyMap, LocationMapCard, LocationHero/LocationThumb/LocationScene (bkz. Görsel Sistemi)
-    content/        FAQAccordion, InfoTable, RelatedSearches, AdSlot...
-    education/      Quiz motoru, eğitim illüstrasyonu, sınıf kartları
-    code-pages/     Plaka görseli, büyük kod hero'su, özet kartı
-    seo/            SEOHead, StructuredData (JSON-LD)
-  data/            Tüm veri kaynağı (bkz. Veri Modeli) + sceneArchetypes.js, locationImageOverrides.ts
-  generated/       locationImageManifest.ts (il/ilçe görsel kayıtlarının tek kaynağı, build-time hesaplanır)
-  assets/locations/ Gerçek/AI fotoğrafların bırakılacağı klasör (bkz. Görsel Sistemi)
-  layouts/         BaseLayout.astro (tek layout, tüm sayfalar bunu kullanır)
-  pages/           Dosya tabanlı route'lar (bkz. aşağıdaki route haritası)
-  styles/          global.css (tasarım token'ları + Tailwind tema eşlemesi)
-  utils/           format, search, slugify, seo, distance, sunTimes, content, sceneEngine.js...
-  types/           Paylaşılan TypeScript tipleri
-  config/          site.ts (site geneli sabitler)
-scripts/           generate-og-images.ts, generate-image-prompts.ts, validate-location-images.ts
-content/           image-generation-prompts.json (AI görsel üretimi için hazır prompt paketi)
-public/
-  icons/, images/, maps/, fonts/, og/   statik varlıklar (og/ = build-time üretilen paylaşım görselleri)
-```
-
-### Route haritası (özet)
-
-```text
-/                                                  Anasayfa
-/iller/                                            İl listesi (filtre + arama)
-/iller/[il]/                                        İl detay sayfası (81 il)
-/iller/[il]/ilceler/                                 İlçe listesi (12 öncelikli il)
-/iller/[il]/[ilce]/                                  İlçe detay sayfası
-/ilceler/  /mahalleler/  /koyler/                    Ulusal kapsam merkez sayfaları
-/plaka-kodlari/  /plaka-kodlari/[kod]/                Plaka kodu index + detay (01–81)
-/alan-kodlari/  /alan-kodlari/[kod]/                  Alan kodu index + detay
-/posta-kodlari/  /posta-kodlari/[kod]/                Posta kodu index + detay
-/haritalar/  /haritalar/turkiye-haritasi/             Harita sayfaları
-/istatistikler/  /istatistikler/en-kalabalik-iller/  /istatistikler/yuzolcumune-gore-en-buyuk-iller/
-/egitim/  /egitim/quiz/  /egitim/81-il-ve-plakalari/  Eğitim köşesi
-/araclar/  /araclar/iki-sehir-arasi-mesafe/  /araclar/gunes-dogusu-batisi/
-/arama/                                              Arama sonuçları (istemci taraflı)
-/rehber/  /gizlilik/  /cerez-politikasi/  /kullanim-kosullari/  /iletisim/
-/sitemap.xml  /robots.txt  /404
-```
-
-## Yerel Geliştirme
+## Hızlı başlangıç
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321
+npm run dev      # paylaşım görsellerini üretir + http://localhost:4321
+npm run build    # görseller + tip kontrolü + üretim derlemesi → dist/
 ```
 
-## Build Komutları
+## Sayfalar
 
-```bash
-npm run check              # astro check (TypeScript + Astro şablon doğrulama)
-npm run build               # og:generate (prebuild) + check + production build -> dist/ + images:validate
-npm run preview              # üretim build'ini yerelde servis eder
-npm run format               # Prettier (+ prettier-plugin-astro)
-npm run og:generate           # 1054 il/ilçe için paylaşım (OG) görselini yeniden üretir (public/og/)
-npm run prompts:generate       # content/image-generation-prompts.json dosyasını yeniden üretir
-npm run images:validate        # Görsel kaydı raporu (bkz. Görsel Sistemi) — build sonunda otomatik çalışır
-```
-
-`npm run build`, `prebuild` hook'u ile önce OG görsellerini üretir, sonra `astro check` çalıştırır (tip
-hatası varsa build durur), ardından `astro build` ve son olarak `images:validate` raporunu basar.
-
-## Veri Modeli
-
-Tüm içerik `src/data/*.ts` dosyalarında saklanır; sayfalar bu dosyalardan okur, veri şablonlarda
-**tekrarlanmaz** (bkz. proje talimatı "no duplicate data across templates").
-
-| Dosya | İçerik |
+| Yol | İçerik |
 |---|---|
-| `provinces.ts` | 81 ilin tamamı — gerçek nüfus (TÜİK ADNKS 2025), yüzölçümü/rakım (Harita Genel
-  Müdürlüğü), alan kodu (Türk Telekom), koordinat, ilçe/mahalle sayısı; 12 öncelikli il için ayrıca tam
-  editöryal içerik (özet, tarihçe, ekonomi, turizm, SSS, kaynaklar) |
-| `districts.ts` | 973 ilçenin tamamı — gerçek nüfus, yüzölçümü, mahalle sayısı; İstanbul'un 39 ilçesi +
-  Çankaya, Keçiören, Konak, Karşıyaka, Artuklu, Midyat için ayrıca tam editöryal içerik. `districtNamesByProvince`
-  bu dizeden **otomatik türetilir** (artık elle bakımı gereken ayrı bir liste değildir) |
-| `neighborhoods.ts` | Kadıköy'ün 21 mahallesi (posta koduyla birlikte) — mahalle/köy seviyesi bu turda
-  kapsam dışıdır |
-| `plateCodes.ts`, `areaCodes.ts` | `provinces.ts`'den **türetilir** (elle kopyalanmaz) |
-| `postalCodes.ts` | `neighborhoods.ts`'den türetilen + birkaç ek örnek kayıt |
-| `regions.ts` | 7 coğrafi bölge |
-| `geography.ts` | Ulusal istatistikler (`provinces.ts`'den türetilir), "Günün Bilgisi" kayıtları,
-  dağ/nehir/göl listeleri |
-| `education.ts` | Sınıf seviyeleri, konular, etkinlikler, quiz soru bankası |
-| `searchIndex.ts` | Yukarıdaki tüm kaynaklardan **build-time'da** derlenen tekleştirilmiş arama indeksi |
-| `sources.ts` | Kurumsal kaynak listesi (TÜİK, PTT, BTK vb.) ve veri sorumluluk reddi metni |
+| `/` | Arama, hızlı sorgular (plaka, alan kodu, mesafe), interaktif harita, 81 il dizini, sıralamalar |
+| `/iller/`, `/iller/{il}/` | 81 il tablosu; il sayfası (cevap kutusu, künye, ilçe tablosu, komşular, mesafeler, SSS) |
+| `/iller/{il}/ilceler/`, `/iller/{il}/{ilce}/` | İlin ilçeleri; ilçe sayfası |
+| `/iller/{il}/mesafeler/` | İlden diğer 80 ile kuş uçuşu mesafeler |
+| `/mesafe/`, `/mesafe/{il1}-{il2}/` | 3.240 il çifti (slug'lar alfabetik) |
+| `/plaka-kodlari/{kod}/`, `/alan-kodlari/{kod}/`, `/posta-kodlari/{kod}/` | Kod sayfaları |
+| `/istatistikler/…` | Nüfus, yüzölçümü, yoğunluk, rakım, ilçe sayısı, ilçe nüfusu sıralamaları |
+| `/haritalar/turkiye-haritasi/` | Tam ekran interaktif il haritası |
+| `/acik-veri/`, `/veri/*.csv|json` | Açık veri indirmeleri |
+| `/llms.txt`, `/llms-full.txt`, `/robots.txt`, `/sitemap.xml`, `/ads.txt` | Tarayıcılar ve yapay zekâ motorları için |
 
-`isDemoData` alanı artık `false` — tüm il/ilçe temel istatistikleri gerçek, kaynaklı verilerdir (bkz.
-`sources.ts` → `dataDisclaimer`). Mahalle/köy/posta kodu verisi hâlâ sınırlı bir örnek kümesidir. Her
-il/ilçe sayfasında bir **Kaynaklar** kartı ve sitenin altbilgisinde sabit bir uyarı metni bulunur.
+## Mimari
 
-### Tipler
-
-Bakınız `src/types/index.ts` — `Province`, `District`, `Neighborhood`, `PlateCode`, `AreaCode`, `PostalCode`,
-`Region`, `FAQItem`, `QuizDefinition`, `LocationImage` vb.
-
-## Görsel Sistemi
-
-İl/ilçe hero ve kart görselleri, gerçek yeri en iyi şekilde temsil edecek hibrit bir öncelik sırasıyla
-seçilir: **gerçek fotoğraf → AI fotogerçekçi görsel → premium stilize illüstrasyon → aynı ilin geçici
-(fallback) görseli**. Erişilebilir bir lisanslı fotoğraf kaynağı (Wikimedia Commons vb.) olmadığı için bugün
-81 il ve 973 ilçenin tamamı 3. veya 4. katmanda; ancak altyapı, ilk iki katman için tamamen hazır.
-
-- **`src/data/sceneArchetypes.js` + `src/utils/sceneEngine.js`** — 19 farklı, gerçek Türkiye
-  coğrafyası/mimarisine dayalı illüstrasyon arketipi (Boğaz köprüsü, Mardin'in taş terasları, Kapadokya'nın
-  peri bacaları, Karadeniz yaylaları, Pamukkale travertenleri vb.), tekrar kullanılabilir SVG çizim
-  fonksiyonlarıyla (`ridgeShape`, `terracedHouses`, `fairyChimneys`, `suspensionBridge`...) üretilir.
-- **`src/data/locationImageOverrides.ts`** — 21 öncelikli il + 21 öncelikli ilçe için elle seçilmiş arketip,
-  odak noktası (focal point) ve doğal alt metin; geri kalan 60 il gerçek `region`/`seas` verisinden, geri
-  kalan ilçeler `coastline` verisinden veya bağlı olduğu ilin arketipinden otomatik türetilir.
-- **`src/generated/locationImageManifest.ts`** — her il/ilçe için tek `LocationImage` kaydını hesaplayan
-  ve `src/assets/locations/**/hero-{real,ai}.*` altında gerçek/AI fotoğraf olup olmadığını
-  (`import.meta.glob` ile) kontrol eden tek kaynak. Bir fotoğraf eklendiğinde sayfa otomatik olarak o
-  fotoğrafı kullanmaya geçer — kod değişikliği gerekmez.
-- **`LocationHero.astro` / `LocationThumb.astro`** — `astro:assets` `<Picture>` ile responsive
-  AVIF/WebP + doğru `loading`/`fetchpriority`, gerçek/AI görsel yoksa aynı konteynerde `LocationScene`
-  illüstrasyonuna döner (CLS yok).
-- **`content/image-generation-prompts.json`** (`npm run prompts:generate`) — 42 öncelikli konum için elle
-  yazılmış, geri kalanı için o konumun gerçek verisinden (bölge, kıyı, iklim) otomatik oluşturulmuş,
-  hazır AI görsel üretim prompt'ları + negatif prompt + beklenen dosya yolu.
-- **`scripts/generate-og-images.ts`** (`npm run og:generate`, prebuild) — her il/ilçe için aynı
-  illüstrasyon sisteminden 1200×630 benzersiz bir paylaşım (OG) görseli üretir; `public/og/` içine yazılır.
-- **`scripts/validate-location-images.ts`** (`npm run images:validate`, her build sonunda) — kayıt
-  sayıları, eksik krediler, aşırı büyük dosyalar, tekrarlanan hero görseli ve geçici/harici URL kullanımı
-  için bir rapor basar.
-- **`/gorsel-kaynaklari/`** — gerçek/AI görsellerin kaynağını, lisansını ve doğrulama durumunu listeleyen
-  sayfa (şu an boş — hiçbir gerçek fotoğraf eklenmedi).
-
-**Gerçek veya AI fotoğraf eklemek için:** `src/assets/locations/provinces/<il-slug>/hero-real.jpg` (veya
-`hero-ai.jpg`) yoluna dosyayı koyun, `locationImageOverrides.ts`'te ilgili `credit` (gerçek fotoğraf) veya
-`aiMetadata` (AI görsel) alanını doldurun, `npm run images:validate` ile doğrulayın.
-
-## Yeni İçerik Ekleme
-
-### Yeni bir il için detaylı (editöryal) içerik eklemek
-
-Tüm 81 il zaten gerçek temel istatistiklerle `provinces.ts` içinde mevcuttur — yeni bir il eklemeniz
-gerekmez. Bir ile uzun formatlı tanıtım içeriği eklemek için ilgili ilin objesine `summary`, `overview`,
-`economy`, `tourism`, `transportation`, `education`, `famousFor`, `popularPlaces`, `faqs`, `sources`
-alanlarını ekleyin; sayfa şablonu bu alanları otomatik olarak (varsa) gösterir.
-
-### Yeni bir ilçeye tam içerik eklemek
-
-Tüm 973 ilçe zaten gerçek temel istatistiklerle (nüfus, yüzölçümü, mahalle sayısı) `districts.ts` içinde
-mevcuttur. Bir ilçeye uzun formatlı içerik (`overview`, `transportation`, `education`, `health`,
-`socialLife`, `historicalPlaces`, `popularPlaces`, `neighborhoods`, `faqs`, `sources`) eklemek için ilgili
-ilçenin objesini `provinceSlug` + `slug` alanlarından bulup düzenleyin (bkz. `kadikoy` kaydı en kapsamlı
-örnektir). Yeni bir il/ilçe **eklemeniz** gerekiyorsa (ör. idari bir değişiklik sonrası), `id`/`slug`/`name`/
-`provinceSlug` alanlarını gerçek veriyle doldurup diziye ekleyin — `districtNamesByProvince`,
-`getDistrictsForProvince`, arama indeksi ve site haritası bu diziden otomatik türetildiği için başka bir
-yerde güncelleme gerekmez.
-
-### Yeni bir kod sayfası eklemek
-
-- **Plaka kodu:** `provinces.ts`'e yeni il eklemek yeterlidir; `plateCodes.ts` otomatik türetir.
-- **Alan kodu:** İlin `areaCodes` dizisine kodu ekleyin; `areaCodes.ts` otomatik türetir.
-- **Posta kodu:** `postalCodes.ts` içindeki `extra` dizisine `{ code, provinceSlug, districtSlug }` ekleyin
-  ya da `neighborhoods.ts`'e mahalle + posta kodu ekleyin (otomatik olarak posta kodu listesine dahil olur).
-
-### Verinin güncellenmesi
-
-Tüm sayısal/istatistiksel alanlar `src/data/*.ts` dosyalarında merkezi olarak tutulur. İl/ilçe nüfus,
-yüzölçümü, rakım ve alan kodu verisi TÜİK ADNKS, Harita Genel Müdürlüğü ve Türk Telekom kaynaklı olup
-düzenli aralıklarla (yeni ADNKS sonuçları yayınlandığında) bu dosyaların içeriği güncellenerek yenilenmelidir;
-bileşenler ve sayfalar değişmeden çalışmaya devam eder — bkz. [Kapsam ve Sonraki Adımlar](#kapsam-ve-sonraki-adımlar).
-
-## SEO / AEO Mimarisi
-
-- `src/components/seo/SEOHead.astro` — başlık, meta açıklama, canonical, Open Graph, Twitter Card.
-- `src/components/seo/StructuredData.astro` — herhangi bir JSON-LD objesini/dizisini `<script type="application/ld+json">`
-  olarak basar.
-- `src/utils/seo.ts` — `websiteSchema`, `organizationSchema`, `breadcrumbListSchema`, `faqPageSchema`,
-  `administrativeAreaSchema`, `webPageSchema`, `itemListSchema`, `quizSchema` üretici fonksiyonları.
-- Her kod/il/ilçe sayfası, sayfanın en üstünde alıntılanabilir bir **"kısa cevap"** bloğu içerir (ör. "47
-  plaka kodu Mardin iline aittir.") — AI cevap motorları ve öne çıkan snippet'ler için optimize edilmiştir.
-- `src/pages/sitemap.xml.ts` — tüm statik ve dinamik route'ları veri katmanından programatik olarak üretir.
-- `public/robots.txt` — sitemap referansı içerir.
-- Breadcrumb şeması **yalnızca** `Breadcrumbs.astro` bileşeni tarafından üretilir; sayfa seviyesinde tekrar
-  eklenmemelidir (çift şema önlemek için).
-
-## Erişilebilirlik ve Performans
-
-- Tüm ikonlar decorative kabul edilip varsayılan olarak `aria-hidden="true"` ile render edilir; interaktif
-  butonlarda anlamlı `aria-label` bulunur.
-- Tek `<h1>`, sıralı başlık hiyerarşisi, semantik `<header>/<main>/<footer>/<nav>` landmark'ları her sayfada
-  doğrulanmıştır.
-- Atla-bağlantısı (`Skip to content`), görünür odak halkaları, `prefers-reduced-motion` desteği.
-- FAQ akordeonları native `<details>/<summary>` ile, JS gerektirmeden çalışır.
-- Sayfa başına JS minimaldir; arama indeksi (~76 KB) yalnızca arama açıldığında lazy-load edilir.
-- Renkler CSS custom property'leri üzerinden tanımlıdır; karanlık mod bileşen başına `dark:` varyantı
-  gerektirmeden otomatik uyarlanır.
-
-## Reklam Alanları
-
-`src/components/content/AdSlot.astro` — sabit yükseklikli (CLS'siz), "Reklam" etiketli placeholder. Gerçek bir
-reklam ağına bağlanırken bu bileşenin içini ilgili ağın slot kodu ile değiştirin. Eğitim Köşesi'nde bilinçli
-olarak sınırlı sayıda kullanılmıştır.
-
-## Deployment
-
-Proje tamamen statiktir (`output: "static"`); `dist/` klasörü herhangi bir statik hosting'e
-(Netlify, Vercel, Cloudflare Pages, GitHub Pages vb.) doğrudan yüklenebilir.
-
-```bash
-npm run build
-# dist/ klasörünü hosting sağlayıcınıza deploy edin
+```text
+src/
+  config/site.ts            Site sabitleri (canonical adres astro.config.mjs'ten gelir)
+  config/monetization.ts    AdSense / GA4 / affiliate / doğrulama kodları (ortam değişkenleri)
+  data/                     Tüm veri: provinces.ts, districts.ts, regions.ts, turkeyMap.ts (üretilir) …
+  utils/content.ts          Veriden il/ilçe paragrafları ve SSS üretir
+  utils/turkish.ts          Türkçe ek uyumu (Ankara'nın, İzmir'in, 34'tür, %6'sı)
+  utils/rankings.ts         Sıralamalar, yoğunluk, en yakın iller
+  utils/sitemap.ts          Bölümlü site haritası
+  components/geography/     ProvinceMap (interaktif), LocatorMap (sprite tabanlı küçük harita)
+  components/content/       InfoBox, SortableTable, FAQAccordion, TravelLinks, AdSlot …
+  components/seo/           SEOHead, StructuredData, ConsentAndAnalytics
+  styles/global.css         Tasarım token'ları (açık/koyu tema)
+scripts/
+  build-map-data.ts         Harita sınırlarını sadeleştirip src/data/turkeyMap.ts üretir (npm run map:build)
+  generate-og-images.ts     1.055 paylaşım görseli + ikonlar (prebuild'de çalışır)
+  vendor/, fonts/           Harita kaynağı (MIT) ve OG fontları (OFL)
 ```
 
-`astro.config.mjs` içindeki `site` alanını (şu an `https://illerilceler.com`) kendi alan adınızla
-güncellemeyi unutmayın — canonical URL'ler ve sitemap bu değeri kullanır.
+### İlkeler
+- **Tek veri kaynağı:** sayfalardaki her cümle `src/data`'dan hesaplanır; tablo ile metin çelişmez.
+- **Dürüstlük:** tahmini değerler (karayolu mesafesi, süre) her zaman "tahmini" etiketlidir;
+  doğrulanmamış veri yayınlanmaz.
+- **Hız:** sıfır UI framework, sayfa başına minimal JS; arama indeksi ayrı JSON olarak ilk
+  kullanımda yüklenir; küçük haritalar önbelleklenen tek bir SVG sprite kullanır.
 
-## Kapsam ve Sonraki Adımlar
+## Ortam değişkenleri (Netlify → Site configuration → Environment variables)
 
-İl/ilçe temel istatistikleri (nüfus, yüzölçümü, rakım, alan kodu, koordinat) artık **81 ilin ve 973
-ilçenin tamamı için** TÜİK ADNKS 2025, Harita Genel Müdürlüğü ve Türk Telekom kaynaklı gerçek verilerdir.
-Kalan kapsam genişletmeleri:
+| Değişken | Açıklama |
+|---|---|
+| `SITE_URL` | Canonical adres (ör. `https://illerilceler.com`). Boşsa Netlify'ın adresi kullanılır |
+| `PUBLIC_GOOGLE_SITE_VERIFICATION`, `PUBLIC_BING_SITE_VERIFICATION`, `PUBLIC_YANDEX_VERIFICATION` | Arama motoru doğrulama kodları |
+| `PUBLIC_GA_ID` | Google Analytics 4 (`G-…`) |
+| `PUBLIC_ADSENSE_CLIENT`, `PUBLIC_ADSENSE_SLOT` | AdSense yayıncı ve reklam birimi kimlikleri (`_INARTICLE`, `_SIDEBAR`, `_LEADERBOARD` isteğe bağlı) |
+| `PUBLIC_BOOKING_AID`, `PUBLIC_TRAVELPAYOUTS_MARKER`, `PUBLIC_OBILET_PARTNER` | Affiliate kimlikleri |
+| `PUBLIC_CONSENT_BANNER=off` | Google'ın kendi onay mesajı kullanılıyorsa yerleşik banner'ı kapatır |
 
-1. **Editöryal içerik** — uzun formatlı tanıtım metinleri (tarihçe, ekonomi, turizm, popüler yerler, SSS)
-   şu an yalnızca 12 öncelikli il ve 45 öncelikli ilçe için mevcuttur; diğer 69 il ve 928 ilçe yalnızca
-   isim + temel istatistiklerle listelenir.
-2. **Posta kodları / mahalleler / köyler** — `postalCodes.ts` ve `neighborhoods.ts` hâlâ Kadıköy'ün 21
-   mahallesiyle sınırlı örnek veridir; PTT'nin resmi veri setiyle 973 ilçe / 32.000+ mahalle / 18.000+ köy
-   kapsamına genişletilmesi ayrı bir çalışma gerektirir.
-3. **Görseller** — altyapı hazır (bkz. [Görsel Sistemi](#görsel-sistemi)); bu ortamda Wikimedia Commons ve
-   benzeri kaynaklara erişim olmadığı için 81 il + 973 ilçenin tamamı hâlâ premium stilize illüstrasyon veya
-   geçici (fallback) katmanında. `content/image-generation-prompts.json` içindeki hazır promptlarla üretilen
-   veya lisanslı gerçek fotoğraflar `src/assets/locations/**/hero-{real,ai}.*` yoluna eklenip
-   `locationImageOverrides.ts`'te kredilendirilerek devreye alınabilir.
-4. **Veri tazeleme** — TÜİK her yıl şubat ayında bir önceki yılın ADNKS sonuçlarını yayınlar; `provinces.ts`
-   / `districts.ts` bu yayınlarla birlikte yeniden derlenmelidir.
+Kimlikler girilmeden hiçbir üçüncü taraf betiği yüklenmez ve canlı sitede boş reklam kutusu görünmez.
 
----
+## Veri güncelleme
+TÜİK her yıl Şubat'ta yeni ADNKS sonuçlarını yayınlar. `src/data/provinces.ts` ve
+`src/data/districts.ts` içindeki `population` / `populationYear` alanlarını güncelleyip push etmek
+yeterlidir; tüm metinler, sıralamalar, sitemap ve paylaşım görselleri otomatik yenilenir.
 
-_Bu README, projenin mevcut durumunu yansıtır. Sorularınız için [/iletisim/](/iletisim/) sayfasını
-kullanabilirsiniz._
+## Lisanslar
+- İl sınırları: [turkey-map-react](https://github.com/erdigokce/turkey-map-react) (MIT) — `scripts/vendor/`
+- Fontlar: Inter, Source Serif 4 (SIL Open Font License) — `scripts/fonts/`

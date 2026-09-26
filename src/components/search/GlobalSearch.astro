@@ -161,11 +161,11 @@ const popularQueries = [
     }
   }
 
-  function openDialog(prefill?: string) {
+  function openDialog(prefill?: string | null) {
     dialog?.classList.remove("hidden");
     document.body.classList.add("overflow-hidden");
     loadSearchIndex();
-    if (input && prefill !== undefined) {
+    if (input && typeof prefill === "string") {
       input.value = prefill;
       runSearch(prefill);
     }
@@ -178,7 +178,7 @@ const popularQueries = [
   }
 
   window.addEventListener("illerilceler:open-search", (e) =>
-    openDialog((e as CustomEvent<string | undefined>).detail),
+    openDialog((e as CustomEvent<string | null>).detail),
   );
   backdrop?.addEventListener("click", closeDialog);
   closeBtn?.addEventListener("click", closeDialog);
